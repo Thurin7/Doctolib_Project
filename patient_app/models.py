@@ -8,7 +8,9 @@ class ECG(models.Model):
     patient = models.ForeignKey(
         Patient,
         on_delete=models.CASCADE,
-        related_name='ecgs'
+        related_name='ecgs',
+        null=True,  # Ajout de ces deux lignes
+        blank=True  # pour rendre le champ optionnel
     )
     ecg_data = models.BinaryField()
     confidence_score = models.FloatField(null=True, blank=True)

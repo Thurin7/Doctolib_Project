@@ -11,70 +11,72 @@ import os
 from .forms import ECGUploadForm
 from .utils.ecg_processor import ECGProcessor
 from .models import ECG
+from django.utils import timezone
+
 
 class ECGUploadView(FormView):
     template_name = 'patient_app/upload.html'
     form_class = ECGUploadForm
-    success_url = '/upload/success/'  # Nous changerons cela plus tard
+    success_url = reverse_lazy('patient_app:upload_success')
 
     def form_valid(self, form):
-        # Récupérer le fichier uploadé
+        print("\n=== DÉBUT DU TRAITEMENT ===")
         file = form.cleaned_data['ecg_file']
+        print(f"Fichier reçu: {file.name}")
         
-        # Sauvegarder temporairement le fichier
         path = default_storage.save(f'tmp/{file.name}', ContentFile(file.read()))
         tmp_file = os.path.join(settings.MEDIA_ROOT, path)
+        print(f"Fichier temporaire créé: {tmp_file}")
         
         try:
-            # Traiter l'ECG
+            print("\n=== TRAITEMENT ECG ===")
             processor = ECGProcessor()
             signal = processor.load_data(tmp_file)
+            print(f"Signal chargé, longueur: {len(signal)}")
             
-            # Analyser le cycle cardiaque
             cycle_length = processor.analyze_cycle_distance(signal)
+            print(f"Cycle length calculé: {cycle_length}")
             
             if cycle_length:
-                # Trouver les pics R
+                print("\n=== ANALYSE DES CYCLES ===")
                 r_peaks = processor.find_r_peaks(signal, cycle_length)
+                print(f"Nombre de pics R trouvés: {len(r_peaks)}")
                 
-                # Extraire les cycles
                 cycles, valid_peaks = processor.extract_cycles(signal, r_peaks)
+                print(f"Nombre de cycles extraits: {len(cycles)}")
                 
-                # Sauvegarder les cycles
                 cycles_file = processor.save_cycles(cycles)
-                
-                # Créer une entrée dans la base de données
-                ecg = ECG.objects.create(
-                    patient=self.request.user.patient_profile,  # Supposant que l'utilisateur est connecté
-                    ecg_data=file.read(),
-                    record_id=1,  # À gérer de manière appropriée
-                    confidence_score=0.85,  # À calculer selon vos critères
-                    interpretation="ECG traité avec succès",
-                )
-                
-                # Nettoyer les fichiers temporaires
-                default_storage.delete(path)
-                os.remove(cycles_file)
-                
+                print(f"Cycles sauvegardés dans: {cycles_file}")
+
+                print("\n=== CRÉATION EN BASE DE DONNÉES ===")
+                try:
+                    # Modification ici : on rend le patient optionnel temporairement
+                    ecg = ECG.objects.create(
+                        record_id=2,  # Pour test
+                        ecg_data=file.read(),
+                        diagnosis_date=timezone.now(),
+                        confidence_score=0.85,
+                        interpretation=f"""
+                            ECG analysé avec succès
+                            Nombre de cycles détectés : {len(cycles)}
+                            Fréquence cardiaque estimée : {60/cycle_length:.1f} BPM
+                        """,
+                        patient_notified=True,
+                        doctor_notified=False,
+                    )
+                    print(f"ECG créé avec succès, ID: {ecg.diagnosis_id}")
+                except Exception as db_error:
+                    print(f"ERREUR lors de la création en BDD: {str(db_error)}")
+                    raise db_error
+
                 return super().form_valid(form)
             
         except Exception as e:
-            # Gérer les erreurs
-            print(f"Erreur lors du traitement de l'ECG: {str(e)}")
-            default_storage.delete(path)
+            print(f"\n=== ERREUR ===")
+            print(f"Type d'erreur: {type(e).__name__}")
+            print(f"Message d'erreur: {str(e)}")
+            print(f"Détails: {e.__dict__}")
             return self.form_invalid(form)
-            
-        finally:
-            # S'assurer que le fichier temporaire est supprimé
-            if os.path.exists(tmp_file):
-                os.remove(tmp_file)
-        
-        return super().form_valid(form)
-
-class ECGUploadView(FormView):
-    template_name = 'patient_app/upload.html'
-    form_class = ECGUploadForm
-    success_url = '/patient/upload/success/'  # URL vers la page de succès
 
 class ECGUploadSuccessView(TemplateView):
     template_name = 'patient_app/upload_success.html'
