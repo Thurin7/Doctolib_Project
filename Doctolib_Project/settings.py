@@ -135,5 +135,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 os.makedirs(MEDIA_ROOT / 'tmp', exist_ok=True)
 os.makedirs(MEDIA_ROOT / 'processed_ecg', exist_ok=True)
+LOGIN_URL = 'account_app:login'  # URL de connexion personnalisée
+LOGIN_REDIRECT_URL = 'patient_app:upload'  # Après connexion
+LOGOUT_REDIRECT_URL = 'account_app:login'  # Après déconnexions
 
 

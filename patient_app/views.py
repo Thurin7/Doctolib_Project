@@ -1,8 +1,12 @@
 from django.shortcuts import render
+from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
+from django.urls import reverse_lazy
+from django.contrib import messages
 import os
 from .forms import ECGUploadForm
 from .utils.ecg_processor import ECGProcessor
@@ -66,3 +70,11 @@ class ECGUploadView(FormView):
                 os.remove(tmp_file)
         
         return super().form_valid(form)
+
+class ECGUploadView(FormView):
+    template_name = 'patient_app/upload.html'
+    form_class = ECGUploadForm
+    success_url = '/patient/upload/success/'  # URL vers la page de succès
+
+class ECGUploadSuccessView(TemplateView):
+    template_name = 'patient_app/upload_success.html'
