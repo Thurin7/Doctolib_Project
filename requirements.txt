@@ -1,7 +1,7 @@
-asgiref==3.8.1
 Django==4.2.18
-sqlparse==0.5.3
-typing_extensions==4.12.2
-pandas
-numpy
-scipy
+tensorflow-macos==2.16.2  # si vous êtes sur Mac M1/M2
+tensorflow-metal==1.1.0   # si vous êtes sur Mac M1/M2
+matplotlib==3.9.4
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.13.1

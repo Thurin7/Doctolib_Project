@@ -10,8 +10,10 @@ from django.contrib import messages
 import os
 from .forms import ECGUploadForm
 from .utils.ecg_processor import ECGProcessor
+from .utils.ecg_predictor import ECGPredictor
 from .models import ECG
 from django.utils import timezone
+from django.shortcuts import render, redirect
 
 
 class ECGUploadView(FormView):
@@ -20,63 +22,90 @@ class ECGUploadView(FormView):
     success_url = reverse_lazy('patient_app:upload_success')
 
     def form_valid(self, form):
-        print("\n=== DÉBUT DU TRAITEMENT ===")
         file = form.cleaned_data['ecg_file']
-        print(f"Fichier reçu: {file.name}")
-        
         path = default_storage.save(f'tmp/{file.name}', ContentFile(file.read()))
         tmp_file = os.path.join(settings.MEDIA_ROOT, path)
-        print(f"Fichier temporaire créé: {tmp_file}")
         
         try:
-            print("\n=== TRAITEMENT ECG ===")
-            processor = ECGProcessor()
-            signal = processor.load_data(tmp_file)
-            print(f"Signal chargé, longueur: {len(signal)}")
-            
-            cycle_length = processor.analyze_cycle_distance(signal)
-            print(f"Cycle length calculé: {cycle_length}")
-            
-            if cycle_length:
-                print("\n=== ANALYSE DES CYCLES ===")
-                r_peaks = processor.find_r_peaks(signal, cycle_length)
-                print(f"Nombre de pics R trouvés: {len(r_peaks)}")
-                
-                cycles, valid_peaks = processor.extract_cycles(signal, r_peaks)
-                print(f"Nombre de cycles extraits: {len(cycles)}")
-                
-                cycles_file = processor.save_cycles(cycles)
-                print(f"Cycles sauvegardés dans: {cycles_file}")
-
-                print("\n=== CRÉATION EN BASE DE DONNÉES ===")
-                try:
-                    # Modification ici : on rend le patient optionnel temporairement
-                    ecg = ECG.objects.create(
-                        record_id=2,  # Pour test
-                        ecg_data=file.read(),
-                        diagnosis_date=timezone.now(),
-                        confidence_score=0.85,
-                        interpretation=f"""
-                            ECG analysé avec succès
-                            Nombre de cycles détectés : {len(cycles)}
-                            Fréquence cardiaque estimée : {60/cycle_length:.1f} BPM
-                        """,
-                        patient_notified=True,
-                        doctor_notified=False,
-                    )
-                    print(f"ECG créé avec succès, ID: {ecg.diagnosis_id}")
-                except Exception as db_error:
-                    print(f"ERREUR lors de la création en BDD: {str(db_error)}")
-                    raise db_error
-
-                return super().form_valid(form)
-            
+            # Stocker les informations nécessaires en session
+            self.request.session['uploaded_ecg_tmp_file'] = tmp_file
+            self.request.session['uploaded_ecg_filename'] = file.name
+            return super().form_valid(form)
+        
         except Exception as e:
-            print(f"\n=== ERREUR ===")
-            print(f"Type d'erreur: {type(e).__name__}")
-            print(f"Message d'erreur: {str(e)}")
-            print(f"Détails: {e.__dict__}")
+            messages.error(self.request, "Erreur lors du téléchargement de l'ECG")
             return self.form_invalid(form)
 
 class ECGUploadSuccessView(TemplateView):
     template_name = 'patient_app/upload_success.html'
+
+    def get(self, request, *args, **kwargs):
+        tmp_file = request.session.get('uploaded_ecg_tmp_file')
+        filename = request.session.get('uploaded_ecg_filename')
+        
+        if not tmp_file or not filename:
+            messages.error(request, "Aucun fichier ECG à traiter")
+            return redirect('patient_app:upload')
+        
+        try:
+            # Traitement de l'ECG
+            processor = ECGProcessor()
+            signal = processor.load_data(tmp_file)
+            cycle_length = processor.analyze_cycle_distance(signal)
+            
+            if cycle_length:
+                r_peaks = processor.find_r_peaks(signal, cycle_length)
+                cycles, valid_peaks = processor.extract_cycles(signal, r_peaks)
+                
+                # Chemin vers le modèle et le scaler (à ajuster)
+                model_path = os.path.join(settings.BASE_DIR, 'patient_app', 'utils', 'model_1.h5')
+                scaler_path = os.path.join(settings.BASE_DIR, 'patient_app', 'utils', 'ecg_scaler.joblib')
+                
+                # Initialisation du prédicteur
+                predictor = ECGPredictor(
+                    model_path=model_path,
+                    scaler_path=scaler_path
+                )
+                
+                # Analyse
+                results = predictor.analyze_personal_ecg(cycles)
+
+                # Création de l'ECG
+                with open(tmp_file, 'rb') as file:
+                    ecg = ECG.objects.create(
+                        ecg_data=file.read(),
+                        diagnosis_date=timezone.now(),
+                        confidence_score=results.get('confidence_score', 0.85),
+                        interpretation=results.get('interpretation', 'Aucune interprétation disponible'),
+                        patient_notified=True,
+                        doctor_notified=False,
+                    )
+
+                # Nettoyer la session
+                del request.session['uploaded_ecg_tmp_file']
+                del request.session['uploaded_ecg_filename']
+
+                messages.success(request, "ECG traité avec succès")
+                
+            else:
+                messages.error(request, "Aucun cycle cardiaque détecté")
+
+        except Exception as e:
+            messages.error(request, f"Erreur lors du traitement de l'ECG : {str(e)}")
+            print(f"Erreur de traitement ECG : {e}")
+        
+        finally:
+            # Nettoyage des fichiers temporaires
+            if tmp_file and os.path.exists(tmp_file):
+                os.remove(tmp_file)
+
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            latest_ecg = ECG.objects.latest('created_at')
+            context['ecg'] = latest_ecg
+        except ECG.DoesNotExist:
+            context['ecg'] = None
+        return context

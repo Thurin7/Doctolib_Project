@@ -3,14 +3,13 @@ from django.utils import timezone
 from account_app.models import Patient
 
 class ECG(models.Model):
-    diagnosis_id = models.AutoField(primary_key=True)
-    record_id = models.IntegerField(unique=True)
+    diagnosis_id = models.AutoField(primary_key=True)  # Gardons celui-ci comme identifiant unique
     patient = models.ForeignKey(
         Patient,
         on_delete=models.CASCADE,
         related_name='ecgs',
-        null=True,  # Ajout de ces deux lignes
-        blank=True  # pour rendre le champ optionnel
+        null=True,  # Pour le moment, car nous n'avons pas encore l'authentification
+        blank=True
     )
     ecg_data = models.BinaryField()
     confidence_score = models.FloatField(null=True, blank=True)

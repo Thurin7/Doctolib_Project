@@ -4,11 +4,47 @@
 <div class="container mx-auto mt-8">
     <div class="bg-white shadow-lg rounded-lg p-6">
         <h2 class="text-2xl font-bold mb-4">ECG envoyé avec succès !</h2>
-        <p class="text-gray-700">Votre ECG a été traité et enregistré dans notre système.</p>
-        <div class="mt-4">
+        
+        {% if ecg %}
+            <div class="mb-4">
+                <h3 class="text-xl font-semibold mb-2">Résultats de l'analyse ECG</h3>
+                <div class="bg-gray-100 p-4 rounded">
+                    <p class="mb-2 text-lg font-bold">
+                        {% if ecg.interpretation|stringformat:"s"|slice:":20" == "ECG probablement SAIN" %}
+                            <span class="text-green-600">{{ ecg.interpretation|stringformat:"s"|slice:":25" }}</span>
+                        {% elif ecg.interpretation|stringformat:"s"|slice:":20" == "ECG probablement MAL" %}
+                            <span class="text-red-600">{{ ecg.interpretation|stringformat:"s"|slice:":27" }}</span>
+                        {% else %}
+                            <span class="text-yellow-600">Résultat incertain</span>
+                        {% endif %}
+                    </p>
+                    
+                    <p class="mb-2">
+                        <strong>Date du diagnostic :</strong> {{ ecg.diagnosis_date|date:"d/m/Y H:i" }}
+                    </p>
+                    <p class="mb-2">
+                        <strong>Score de confiance :</strong> {{ ecg.confidence_score|floatformat:2 }}%
+                    </p>
+                    
+                    <div class="mt-4">
+                        <h4 class="font-bold">Détails de l'interprétation :</h4>
+                        <pre class="bg-white p-3 rounded text-sm text-gray-800 overflow-x-auto whitespace-pre-wrap">{{ ecg.interpretation }}</pre>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="text-gray-700">Aucun détail d'ECG disponible.</p>
+        {% endif %}
+
+        <div class="mt-4 flex space-x-4">
             <a href="{% url 'patient_app:upload' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                 Envoyer un autre ECG
             </a>
+            {% if ecg %}
+                <a href="#" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    Partager le résultat
+                </a>
+            {% endif %}
         </div>
     </div>
 </div>
