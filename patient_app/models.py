@@ -3,17 +3,29 @@ from django.utils import timezone
 from account_app.models import Patient
 
 class ECG(models.Model):
-    diagnosis_id = models.AutoField(primary_key=True)  # Gardons celui-ci comme identifiant unique
+    RISK_LEVELS = [
+        ('LOW', 'Faible'),
+        ('MEDIUM', 'Moyen'),
+        ('HIGH', 'Élevé'),
+    ]
+
+    diagnosis_id = models.AutoField(primary_key=True)
     patient = models.ForeignKey(
         Patient,
         on_delete=models.CASCADE,
         related_name='ecgs',
-        null=True,  # Pour le moment, car nous n'avons pas encore l'authentification
+        null=True,
         blank=True
     )
     ecg_data = models.BinaryField()
     confidence_score = models.FloatField(null=True, blank=True)
     interpretation = models.TextField(null=True, blank=True)
+    risk_level = models.CharField(  # Ajout du champ risk_level
+        max_length=10,
+        choices=RISK_LEVELS,
+        default='LOW'
+    )
+    plots = models.BinaryField(null=True, blank=True)  # Ajout du champ plots
     patient_notified = models.BooleanField(default=False)
     doctor_notified = models.BooleanField(default=False)
     doctor_notes = models.TextField(null=True, blank=True)

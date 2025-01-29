@@ -72,11 +72,15 @@ class ECGUploadSuccessView(TemplateView):
 
                 # Création de l'ECG
                 with open(tmp_file, 'rb') as file:
+                
+                    risk_level = 'LOW' if results['conclusion'] == 'ECG SAIN' else 'HIGH'
+
                     ecg = ECG.objects.create(
                         ecg_data=file.read(),
                         diagnosis_date=timezone.now(),
-                        confidence_score=results.get('confidence_score', 0.85),
-                        interpretation=results.get('interpretation', 'Aucune interprétation disponible'),
+                        confidence_score=results['confidence_score'],
+                        interpretation=results['interpretation'],
+                        risk_level=risk_level,  # Ajout du risk_level
                         patient_notified=True,
                         doctor_notified=False,
                     )

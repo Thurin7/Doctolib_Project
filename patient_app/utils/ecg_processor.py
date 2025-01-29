@@ -92,15 +92,3 @@ class ECGProcessor:
         np.savetxt(full_path, cycles, delimiter=',')
         print(f"Cycles sauvegardés dans {full_path}")
         return full_path
-
-class ECGUploadSuccessView(LoginRequiredMixin, TemplateView):
-    template_name = 'patient_app/upload_success.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Récupérer le dernier ECG de l'utilisateur
-        latest_ecg = ECG.objects.filter(
-            patient=self.request.user.patient_profile
-        ).latest('created_at')
-        context['ecg'] = latest_ecg
-        return context
