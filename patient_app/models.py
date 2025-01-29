@@ -18,6 +18,7 @@ class ECG(models.Model):
         blank=True
     )
     ecg_data = models.BinaryField()
+    processed_data_path = models.CharField(max_length=255, null=True, blank=True)
     confidence_score = models.FloatField(null=True, blank=True)
     interpretation = models.TextField(null=True, blank=True)
     risk_level = models.CharField(  # Ajout du champ risk_level

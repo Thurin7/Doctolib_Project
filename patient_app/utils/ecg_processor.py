@@ -4,6 +4,8 @@ from scipy.signal import find_peaks, savgol_filter
 from datetime import datetime
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
+import os
+from django.conf import settings
 
 class ECGProcessor:
     def __init__(self, sample_rate=120):
@@ -72,23 +74,19 @@ class ECGProcessor:
         
         return np.array(cycles), np.array(valid_peaks)
     
-    def save_cycles(self, cycles, filename=None):
-        if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"ecg_cycles_{timestamp}.csv"
-        
-        # Utiliser le chemin complet vers le dossier media
-        from django.conf import settings
-        import os
-        
-        # Créer un sous-dossier 'processed_ecg' dans media
+    def save_cycles(self, cycles, original_filename):
+        # Créer le dossier processed_ecg s'il n'existe pas
         processed_dir = os.path.join(settings.MEDIA_ROOT, 'processed_ecg')
         os.makedirs(processed_dir, exist_ok=True)
+        
+        # Générer un nom de fichier unique avec timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"processed_{timestamp}_{os.path.splitext(original_filename)[0]}.csv"
         
         # Chemin complet du fichier
         full_path = os.path.join(processed_dir, filename)
         
         # Sauvegarder le fichier
         np.savetxt(full_path, cycles, delimiter=',')
-        print(f"Cycles sauvegardés dans {full_path}")
+        print(f"Cycles traités sauvegardés dans {full_path}")
         return full_path
