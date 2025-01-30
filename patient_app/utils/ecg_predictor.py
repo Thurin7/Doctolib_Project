@@ -16,6 +16,8 @@ class ECGPredictor:
         try:
             # Charger le modèle
             self.model = tf.keras.models.load_model(model_path)
+            print("Architecture du modèle:")
+            self.model.summary()
             self.model.compile(
                 optimizer='adam',
                 loss='sparse_categorical_crossentropy',
@@ -24,6 +26,7 @@ class ECGPredictor:
             
             # Charger le scaler
             self.scaler = load(scaler_path)
+            print("\nType de scaler:", type(self.scaler))
             
             # Seuil optimal calculé pendant l'entraînement
             self.optimal_threshold = 0.038
@@ -79,14 +82,41 @@ class ECGPredictor:
 
 
     def analyze_personal_ecg(self, cycles):
-        # Normalisation et préparation
-        cycles_normalises = self.scaler.transform(cycles)
+
+        """
+        Analyse complète des cycles ECG avec visualisations et métriques détaillées
+        """
+        # Debug avant tout traitement
+        print("Debug - Données brutes:")
+        print(f"Shape des cycles: {cycles.shape}")
+        print(f"Amplitude min-max brute: {np.min(cycles):.3f} - {np.max(cycles):.3f}")
+
+        # Normalisation manuelle cycle par cycle
+        cycles_normalises = np.zeros_like(cycles)
+        for i in range(len(cycles)):
+            cycle = cycles[i]
+            min_val = np.min(cycle)
+            max_val = np.max(cycle)
+            if max_val - min_val > 0:  # Éviter division par zéro
+                cycles_normalises[i] = (cycle - min_val) / (max_val - min_val)
+
+        # Debug après normalisation
+        print("\nDebug - Après normalisation manuelle:")
+        print(f"Shape des cycles normalisés: {cycles_normalises.shape}")
+        print(f"Amplitude min-max normalisée: {np.min(cycles_normalises):.3f} - {np.max(cycles_normalises):.3f}")
+
+        # Préparation pour le modèle
         X = cycles_normalises.reshape(-1, 182, 1)
         
         # Prédictions
         predictions = self.model.predict(X, verbose=0)
         probas_malade = predictions[:, 1]
         classifications = (probas_malade >= self.optimal_threshold).astype(int)
+
+        # Debug des prédictions
+        print("\nDebug - Prédictions par cycle:")
+        for i, (proba, classif) in enumerate(zip(probas_malade, classifications)):
+            print(f"Cycle {i+1:2d}: Proba malade = {proba:.3f}, Classification = {'MALADE' if classif else 'SAIN'}")
         
         # Statistiques
         n_sains = np.sum(classifications == 0)
