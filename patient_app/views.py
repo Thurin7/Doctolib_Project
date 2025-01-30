@@ -1,20 +1,19 @@
 from django.shortcuts import render
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
 from django.urls import reverse_lazy
 from django.contrib import messages
+from django.utils import timezone
+from django.shortcuts import render, redirect
 import os
+import base64
 from .forms import ECGUploadForm
 from .utils.ecg_processor import ECGProcessor
 from .utils.ecg_predictor import ECGPredictor
 from .models import ECG
-from django.utils import timezone
-from django.shortcuts import render, redirect
-
 
 class ECGUploadView(FormView):
     template_name = 'patient_app/upload.html'
@@ -60,46 +59,63 @@ class ECGUploadSuccessView(TemplateView):
             signal = processor.load_data(tmp_file)
             cycle_length = processor.analyze_cycle_distance(signal)
             
-            if cycle_length:
-                r_peaks = processor.find_r_peaks(signal, cycle_length)
-                cycles, valid_peaks = processor.extract_cycles(signal, r_peaks)
-                
-                # Sauvegarder les cycles traités
-                processed_file_path = processor.save_cycles(cycles, filename)
-                
-                # Chemin vers le modèle et le scaler (à ajuster)
-                model_path = os.path.join(settings.BASE_DIR, 'patient_app', 'utils', 'model_1.h5')
-                scaler_path = os.path.join(settings.BASE_DIR, 'patient_app', 'utils', 'ecg_scaler.joblib')
-                
-                # Initialisation du prédicteur
-                predictor = ECGPredictor(
-                    model_path=model_path,
-                    scaler_path=scaler_path
-                )
-                
-                # Analyse
-                results = predictor.analyze_personal_ecg(cycles)
-
-                # Création de l'ECG avec le fichier original
-                with open(tmp_file, 'rb') as file:
-                    risk_level = 'LOW' if results['conclusion'] == 'ECG SAIN' else 'HIGH'
-                    ecg = ECG.objects.create(
-                        ecg_data=file.read(),
-                        processed_data_path=processed_file_path,  # Ajouter ce champ au modèle ECG
-                        diagnosis_date=timezone.now(),
-                        confidence_score=results['confidence_score'],
-                        interpretation=results['interpretation'],
-                        risk_level=risk_level,
-                        patient_notified=True,
-                        doctor_notified=False,
-                    )
-
-            else:
+            if not cycle_length:
                 messages.error(request, "Aucun cycle cardiaque détecté")
+                return redirect('patient_app:upload')
+
+            # Extraction des cycles
+            r_peaks = processor.find_r_peaks(signal, cycle_length)
+            cycles, valid_peaks = processor.extract_cycles(signal, r_peaks)
+            processed_file_path = processor.save_cycles(cycles, filename)
+
+            # Configuration des chemins pour le modèle et le scaler
+            model_path = os.path.join(settings.BASE_DIR, 'patient_app', 'models', 'ecg_model_m1.h5')
+            scaler_path = os.path.join(settings.BASE_DIR, 'patient_app', 'models', 'ecg_scaler_m1.joblib')
+            
+            # Initialisation et analyse avec le nouveau prédicteur
+            predictor = ECGPredictor(model_path=model_path, scaler_path=scaler_path)
+            results = predictor.analyze_personal_ecg(cycles)
+
+            # Lecture du fichier ECG
+            with open(tmp_file, 'rb') as file:
+                ecg_data = file.read()
+
+            # Conversion des plots en bytes si nécessaire
+            plots_data = results.get('plots')
+            if plots_data and not isinstance(plots_data, bytes):
+                plots_data = bytes(plots_data)
+
+            print("Debug - Interpretation:", results.get('interpretation'))
+
+            # Dans la vue, avant de créer l'ECG
+            print("Debug - Plots data type:", type(results.get('plots')))
+            print("Debug - Plots data size:", len(results.get('plots')) if results.get('plots') else 'None')
+            print("Debug - Interpretation:", results.get('interpretation'))
+
+            # Création de l'ECG avec les plots
+            ecg = ECG.objects.create(
+                ecg_data=ecg_data,
+                processed_data_path=processed_file_path,
+                diagnosis_date=timezone.now(),
+                confidence_score=results['confidence_score'],
+                interpretation=results['interpretation'],
+                risk_level=results['risk_level'],
+                plots=plots_data,  # Utiliser plots_data ici
+                patient_notified=True,
+                doctor_notified=results['risk_level'] == 'HIGH'
+            )
+
+
+            # Stockage des cycles_details dans la session pour l'affichage
+            request.session['cycles_details'] = results.get('cycles_details', [])
+            request.session['analyzed_ecg_id'] = ecg.diagnosis_id
 
         except Exception as e:
+            import traceback
+            print("Erreur détaillée avec traceback complet:")
+            print(traceback.format_exc())
             messages.error(request, f"Erreur lors du traitement de l'ECG : {str(e)}")
-            print(f"Erreur de traitement ECG : {e}")
+            return redirect('patient_app:upload')
         
         finally:
             # Nettoyage du fichier temporaire
@@ -115,8 +131,42 @@ class ECGUploadSuccessView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         try:
-            latest_ecg = ECG.objects.latest('created_at')
-            context['ecg'] = latest_ecg
+            # Récupérer l'ECG analysé
+            ecg_id = self.request.session.get('analyzed_ecg_id')
+            if ecg_id:
+                ecg = ECG.objects.get(diagnosis_id=ecg_id)
+                context['ecg'] = ecg
+
+                # Convertir le score de confiance en pourcentage
+                ecg.confidence_score = ecg.confidence_score * 100
+                
+                context['ecg'] = ecg
+                context['cycles_details'] = self.request.session.get('cycles_details', [])
+                
+                if ecg.plots:
+                    context['plots'] = base64.b64encode(ecg.plots).decode('utf-8')
+                
+                # Ajouter les détails des cycles
+                context['cycles_details'] = self.request.session.get('cycles_details', [])
+                
+                # Ajouter les plots encodés en base64 si disponibles
+                if ecg.plots:
+                    context['plots'] = base64.b64encode(ecg.plots).decode('utf-8')
+                
+                # Ajouter des messages selon le niveau de risque
+                if ecg.risk_level == 'HIGH':
+                    messages.warning(self.request, "⚠️ Attention : Anomalies significatives détectées. Consultation médicale recommandée.")
+                elif ecg.risk_level == 'MEDIUM':
+                    messages.info(self.request, "ℹ️ Quelques irrégularités détectées. Surveillance recommandée.")
+                else:
+                    messages.success(self.request, "✅ ECG normal. Aucune anomalie significative détectée.")
+                
+            # Nettoyer la session après utilisation
+            self.request.session.pop('analyzed_ecg_id', None)
+            self.request.session.pop('cycles_details', None)
+            
         except ECG.DoesNotExist:
             context['ecg'] = None
+            messages.error(self.request, "Résultats de l'analyse non trouvés")
+        
         return context

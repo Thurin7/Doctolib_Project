@@ -26,7 +26,7 @@ class ECG(models.Model):
         choices=RISK_LEVELS,
         default='LOW'
     )
-    plots = models.BinaryField(null=True, blank=True)  # Ajout du champ plots
+    plots = models.BinaryField(editable=True, null=True, blank=True)  # Ajoutez editable=True
     patient_notified = models.BooleanField(default=False)
     doctor_notified = models.BooleanField(default=False)
     doctor_notes = models.TextField(null=True, blank=True)
