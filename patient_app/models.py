@@ -35,7 +35,9 @@ class ECG(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"ECG #{self.diagnosis_id} - Patient: {self.patient.last_name} - Date: {self.created_at}"
+        patient_name = f"{self.patient.last_name}" if self.patient else "Inconnu"
+        return f"ECG #{self.diagnosis_id} - Patient: {patient_name} - Date: {self.created_at}"
+
 
     class Meta:
         verbose_name = "ECG"

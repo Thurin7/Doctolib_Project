@@ -133,6 +133,7 @@ class ECGUploadSuccessView(TemplateView):
         try:
             # Récupérer l'ECG analysé
             ecg_id = self.request.session.get('analyzed_ecg_id')
+           
             if ecg_id:
                 ecg = ECG.objects.get(diagnosis_id=ecg_id)
                 context['ecg'] = ecg
@@ -140,19 +141,11 @@ class ECGUploadSuccessView(TemplateView):
                 # Convertir le score de confiance en pourcentage
                 ecg.confidence_score = ecg.confidence_score * 100
                 
-                context['ecg'] = ecg
                 context['cycles_details'] = self.request.session.get('cycles_details', [])
-                
+              
                 if ecg.plots:
                     context['plots'] = base64.b64encode(ecg.plots).decode('utf-8')
-                
-                # Ajouter les détails des cycles
-                context['cycles_details'] = self.request.session.get('cycles_details', [])
-                
-                # Ajouter les plots encodés en base64 si disponibles
-                if ecg.plots:
-                    context['plots'] = base64.b64encode(ecg.plots).decode('utf-8')
-                
+
                 # Ajouter des messages selon le niveau de risque
                 if ecg.risk_level == 'HIGH':
                     messages.warning(self.request, "⚠️ Attention : Anomalies significatives détectées. Consultation médicale recommandée.")

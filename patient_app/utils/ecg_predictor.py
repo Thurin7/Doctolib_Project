@@ -4,6 +4,7 @@ import matplotlib
 matplotlib.use('Agg')  # Ajoutez cette ligne AVANT d'importer pyplot
 import matplotlib.pyplot as plt
 import io
+import seaborn as sns
 from django.conf import settings
 from sklearn.preprocessing import StandardScaler
 from joblib import load
@@ -39,48 +40,78 @@ class ECGPredictor:
 
     def generate_plots(self, cycles, probas_malade, classifications):
         try:
-            plt.figure(figsize=(20, 15))
+            # Utilisation du style médical ggplot
+            plt.style.use('ggplot')
+            fig, ax = plt.subplots(figsize=(12, 6))
+
+            # Nombre de cycles normaux et anormaux
+            n_normaux = sum(1 for x in classifications if x == 0)
+            n_anormaux = sum(1 for x in classifications if x == 1)
+
+            # Générer des couleurs plus contrastées en évitant le blanc
+            cold_colors = sns.color_palette("Blues", n_normaux + 2)[1:]  # On saute la première couleur (trop claire)
+            warm_colors = sns.color_palette("Reds", n_anormaux + 2)[1:]  # Même chose pour éviter les tons trop pâles
             
-            # Superposition des cycles avec classification
-            plt.subplot(2, 2, 1)
-            for i in range(len(cycles)):
-                color = 'red' if classifications[i] == 1 else 'blue'
-                plt.plot(cycles[i], alpha=0.3, color=color)
-            plt.title('Classification des cycles (rouge=anomalie, bleu=normal)')
-            plt.grid(True)
-            
-            # Distribution des probabilités
-            plt.subplot(2, 2, 2)
-            plt.hist(probas_malade, bins=20, color='blue', alpha=0.7)
-            plt.axvline(x=self.optimal_threshold, color='r', linestyle='--', 
-                    label=f'Seuil ({self.optimal_threshold})')
-            plt.title('Distribution des probabilités d\'anomalie')
-            plt.legend()
-            
-            # Évolution des probabilités
-            plt.subplot(2, 2, 3)
-            plt.plot(probas_malade, 'bo-', label='Probabilité')
-            plt.axhline(y=self.optimal_threshold, color='r', linestyle='--', label='Seuil')
-            plt.fill_between(range(len(probas_malade)), probas_malade, self.optimal_threshold,
-                            where=(probas_malade >= self.optimal_threshold),
-                            color='red', alpha=0.3, label='Zones anormales')
-            plt.title('Probabilités par cycle')
-            plt.legend()
-            
-            # Sauvegarder le plot
+            cold_index, warm_index = 0, 0  # Indices pour suivre les couleurs
+            cycle_labels = []  # Pour stocker les labels des cycles
+
+            for i, cycle in enumerate(cycles):
+                if classifications[i] == 0:
+                    color = cold_colors[cold_index]
+                    cold_index += 1
+                else:
+                    color = warm_colors[warm_index]
+                    warm_index += 1
+
+                # Ajouter chaque cycle avec sa couleur dans la légende
+                label = f"Cycle {i+1}"
+                cycle_labels.append((label, color))  # Stocke pour la légende complète
+                
+                ax.plot(cycle, alpha=0.85, color=color, linewidth=1.5, label=label)
+
+            # Paramètres visuels
+            ax.set_title("Superposition des cycles ECG", fontsize=14, fontweight='bold')
+            ax.set_xlabel("Échantillons", fontsize=12)
+            ax.set_ylabel("Amplitude normalisée", fontsize=12)
+            ax.grid(True, linestyle='--', linewidth=0.5, alpha=0.7)
+
+            # 📌 Légende principale : Afficher uniquement les cycles normaux/anormaux en bas à droite
+            legend_labels = {
+                "Cycles Normaux": cold_colors[10] if cold_colors else "blue",
+                "Cycles Anormaux": warm_colors[0] if warm_colors else "red"
+            }
+            handles = [plt.Line2D([0], [0], color=color, linewidth=2, label=label) for label, color in legend_labels.items()]
+            classification_legend = ax.legend(handles=handles, loc="lower right", fontsize=10, frameon=True)
+
+            # 📌 Légende des cycles : Organiser en colonnes (ncol=3) pour une meilleure lisibilité
+            handles = [plt.Line2D([0], [0], color=color, linewidth=1.5, label=label) for label, color in cycle_labels]
+            cycle_legend = ax.legend(handles=handles, loc="upper right", fontsize=8, frameon=True, ncol=3)
+
+            # Ajouter la légende de classification après celle des cycles
+            ax.add_artist(cycle_legend)
+            ax.add_artist(classification_legend)
+
+            # Sauvegarde du plot dans un buffer mémoire
             buffer = io.BytesIO()
-            plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
-            plt.close('all')
+            plt.savefig(buffer, format='png', dpi=200, bbox_inches='tight')
+            plt.close(fig)
             buffer.seek(0)
-            
-            # Convertir en bytes et retourner
-            return buffer.getvalue()
+
+            return buffer.getvalue()  # Retourne l'image encodée en bytes
 
         except Exception as e:
             print(f"Erreur lors de la génération des plots : {e}")
             return None
 
+    def calculate_confidence(self, probas_malade):
+        """
+        Calcule un score de confiance basé sur les probabilités du modèle.
+        """
+        certainty_scores = [abs(p - 0.5) * 2 for p in probas_malade]  # Transforme [0-1] en score de certitude
+        confidence_score = np.mean(certainty_scores)  # Moyenne des scores de certitude
+        return confidence_score
 
+    
     def analyze_personal_ecg(self, cycles):
 
         """
@@ -109,7 +140,7 @@ class ECGPredictor:
         X = cycles_normalises.reshape(-1, 182, 1)
         
         # Prédictions
-        predictions = self.model.predict(X, verbose=0)
+        predictions = self.model.predict(X)
         probas_malade = predictions[:, 1]
         classifications = (probas_malade >= self.optimal_threshold).astype(int)
 
@@ -122,7 +153,10 @@ class ECGPredictor:
         n_sains = np.sum(classifications == 0)
         n_malades = np.sum(classifications == 1)
         ratio_malades = n_malades / len(cycles)
-        
+
+        #Score de confiance
+        confidence_score = self.calculate_confidence(probas_malade)
+
         # Génération des plots - Correction ici
         plots_data = self.generate_plots(cycles, probas_malade, classifications)
         
@@ -137,53 +171,50 @@ class ECGPredictor:
             })
         
         # Détermination du niveau de risque et de l'interprétation
-        if ratio_malades < 0.1:
+        if ratio_malades == 0 :
             risk_level = 'LOW'
             conclusion = "ECG NORMAL"
-            confidence_score = 0.9
             interpretation = f"""Analyse détaillée :
     - Total des cycles analysés : {len(cycles)}
     - Cycles normaux : {n_sains}
     - Cycles anormaux : {n_malades}
     - Ratio d'anomalies : {ratio_malades*100:.1f}%
 
-    Conclusion :
-    L'analyse n'a révélé aucune anomalie significative. L'ECG présente un rythme régulier avec des cycles normaux.
+Conclusion :
+L'analyse n'a révélé aucune anomalie significative. L'ECG présente un rythme régulier avec des cycles normaux.
 
-    Recommandation : 
-    Aucune action médicale urgente n'est requise."""
+Recommandation : 
+Aucune action médicale urgente n'est requise."""
 
-        elif ratio_malades < 0.3:
+        elif 0 < ratio_malades < 0.3 :
             risk_level = 'MEDIUM'
             conclusion = "ECG À CONTRÔLER"
-            confidence_score = 0.7
             interpretation = f"""Analyse détaillée :
     - Total des cycles analysés : {len(cycles)}
     - Cycles normaux : {n_sains}
     - Cycles anormaux : {n_malades}
     - Ratio d'anomalies : {ratio_malades*100:.1f}%
 
-    Conclusion :
-    Quelques irrégularités ont été détectées dans le rythme cardiaque. Bien que non critiques, ces anomalies méritent attention.
+Conclusion :
+Quelques irrégularités ont été détectées dans le rythme cardiaque. Bien que non critiques, ces anomalies méritent attention.
 
-    Recommandation : 
-    Une consultation médicale de contrôle est recommandée pour évaluer ces irrégularités."""
+Recommandation : 
+Une consultation médicale de contrôle est recommandée pour évaluer ces irrégularités."""
 
         else:
             risk_level = 'HIGH'
             conclusion = "ECG À CONTRÔLER D'URGENCE"
-            confidence_score = 0.5
             interpretation = f"""Analyse détaillée :
     - Total des cycles analysés : {len(cycles)}
     - Cycles normaux : {n_sains}
     - Cycles anormaux : {n_malades}
     - Ratio d'anomalies : {ratio_malades*100:.1f}%
 
-    Conclusion :
-    Des anomalies significatives ont été détectées dans le rythme cardiaque. Le nombre de cycles anormaux est important.
+Conclusion :
+Des anomalies significatives ont été détectées dans le rythme cardiaque. Le nombre de cycles anormaux est important.
 
-    RECOMMANDATION URGENTE : 
-    Une consultation médicale rapide est nécessaire pour évaluer ces anomalies."""
+RECOMMANDATION URGENTE : 
+Une consultation médicale rapide est nécessaire pour évaluer ces anomalies."""
 
         # Générer les plots AVANT de créer le dictionnaire results
         plots_data = self.generate_plots(cycles, probas_malade, classifications)
