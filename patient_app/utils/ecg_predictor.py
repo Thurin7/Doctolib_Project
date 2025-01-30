@@ -238,18 +238,19 @@ Une consultation médicale rapide est nécessaire pour évaluer ces anomalies.""
         }
 
     def _assess_risk_level(self, stats):
-        """Évalue le niveau de risque basé sur plusieurs facteurs."""
         ratio = stats['abnormal_ratio']
         consecutive_abnormal = stats['consecutive_abnormal']
         max_proba = stats['max_probability']
         
-        if ratio == 0:
+        # Risque élevé uniquement si plusieurs conditions sont remplies
+        if (ratio > 0.3 and max_proba >= 0.7) or consecutive_abnormal >= 2:
             return {
-                'risk_level': 'LOW',
-                'conclusion': 'ECG NORMAL',
-                'interpretation': self._generate_interpretation(stats, 'normal')
+                'risk_level': 'HIGH',
+                'conclusion': 'ECG À CONTRÔLER D\'URGENCE',
+                'interpretation': self._generate_interpretation(stats, 'urgent')
             }
-        elif ratio < 0.3 and consecutive_abnormal < 2 and max_proba < 0.7:
+        # Risque moyen pour des anomalies isolées mais significatives
+        elif ratio > 0.1 or max_proba >= 0.7:
             return {
                 'risk_level': 'MEDIUM',
                 'conclusion': 'ECG À CONTRÔLER',
@@ -257,9 +258,9 @@ Une consultation médicale rapide est nécessaire pour évaluer ces anomalies.""
             }
         else:
             return {
-                'risk_level': 'HIGH',
-                'conclusion': 'ECG À CONTRÔLER D\'URGENCE',
-                'interpretation': self._generate_interpretation(stats, 'urgent')
+                'risk_level': 'LOW',
+                'conclusion': 'ECG NORMAL',
+                'interpretation': self._generate_interpretation(stats, 'normal')
             }
 
     def _count_consecutive_abnormal(self, classifications):

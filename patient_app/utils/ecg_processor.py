@@ -11,14 +11,14 @@ from django.conf import settings
 
 class ECGProcessor:
     def __init__(self):
-        self.sampling_freq = 500.0
+        self.sampling_freq = 120.0 
         self.target_length = 182
-        self.before_r = 20
-        self.after_r = 30
+        self.before_r = 20    
+        self.after_r = 20    
         self.peak_params = {
-            'height': 0.4,
-            'distance': 30,
-            'prominence': 0.3,
+        'height': 0.4,
+        'distance': 30,    # Distance minimale entre pics (~60ms à 500Hz)
+        'prominence': 0.3
         }
         self.r_peak_params = {
             'height': 0.6,
