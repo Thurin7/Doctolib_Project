@@ -14,6 +14,8 @@ from .forms import ECGUploadForm
 from .utils.ecg_processor import ECGProcessor
 from .utils.ecg_predictor import ECGPredictor
 from .models import ECG
+from django.views.generic import DetailView, ListView
+from .models import ECG
 
 class ECGUploadView(FormView):
     template_name = 'patient_app/upload.html'
@@ -41,6 +43,12 @@ class ECGUploadView(FormView):
                 os.remove(tmp_file)
             messages.error(self.request, "Erreur lors du téléchargement de l'ECG")
             return self.form_invalid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Récupérer les 5 dernières analyses ECG, sans filtrage
+        context['previous_ecgs'] = ECG.objects.order_by('-diagnosis_date')[:5]
+        return context
 
 class ECGUploadSuccessView(TemplateView):
     template_name = 'patient_app/upload_success.html'
@@ -163,3 +171,19 @@ class ECGUploadSuccessView(TemplateView):
             messages.error(self.request, "Résultats de l'analyse non trouvés")
         
         return context
+
+class ECGDetailView(DetailView):
+    model = ECG
+    template_name = 'patient_app/ecg_detail.html'
+    context_object_name = 'ecg'
+    pk_url_kwarg = 'pk'
+    
+class ECGHistoryView(ListView):
+    model = ECG
+    template_name = 'patient_app/ecg_history.html'
+    context_object_name = 'ecgs'
+    paginate_by = 10
+
+    def get_queryset(self):
+        # Récupérer tous les ECG, triés par date de diagnostic (les plus récents en premier)
+        return ECG.objects.order_by('-diagnosis_date')

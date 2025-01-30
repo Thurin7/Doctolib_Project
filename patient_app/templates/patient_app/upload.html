@@ -25,5 +25,56 @@
             </div>
         </form>
     </div>
+
+    {% if previous_ecgs %}
+    <div class="mt-8">
+        <h3 class="text-xl font-semibold mb-4">Historique des analyses ECG</h3>
+        <div class="bg-white shadow-md rounded">
+            <table class="min-w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risque</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score de Confiance</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for ecg in previous_ecgs %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {{ ecg.diagnosis_date|date:"d/m/Y H:i" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if ecg.risk_level == 'HIGH' %}bg-red-100 text-red-800
+                                {% elif ecg.risk_level == 'MEDIUM' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-green-100 text-green-800{% endif %}">
+                                {{ ecg.get_risk_level_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {{ ecg.confidence_score|floatformat:1 }}%
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{% url 'patient_app:ecg_detail' ecg.diagnosis_id %}" 
+                               class="text-blue-500 hover:text-blue-700">
+                                Détails
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if previous_ecgs|length == 5 %}
+        <div class="mt-4 text-right">
+            <a href="{% url 'patient_app:ecg_history' %}" class="text-blue-500 hover:text-blue-700">
+                Voir tous les résultats
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto mt-8">
+    <h2 class="text-2xl font-bold mb-4">Historique complet des analyses ECG</h2>
+    
+    {% if ecgs %}
+    <div class="bg-white shadow-md rounded">
+        <table class="min-w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risque</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score de Confiance</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for ecg in ecgs %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {{ ecg.diagnosis_date|date:"d/m/Y H:i" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            {% if ecg.risk_level == 'HIGH' %}bg-red-100 text-red-800
+                            {% elif ecg.risk_level == 'MEDIUM' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ ecg.risk_level }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {{ ecg.confidence_score|floatformat:1 }}%
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="{% url 'patient_app:ecg_detail' ecg.diagnosis_id %}" 
+                           class="text-blue-500 hover:text-blue-700">
+                            Détails
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+    <div class="flex justify-center mt-4">
+        <div class="space-x-2">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" 
+                   class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                    Précédent
+                </a>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <span class="px-4 py-2 bg-blue-500 text-white rounded">{{ num }}</span>
+                {% else %}
+                    <a href="?page={{ num }}" 
+                       class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                        {{ num }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" 
+                   class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                    Suivant
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="bg-yellow-100 text-yellow-700 p-4 rounded-lg">
+        <p>Aucune analyse ECG n'a encore été effectuée.</p>
+        <a href="{% url 'patient_app:upload' %}" class="text-blue-500 hover:text-blue-600 mt-2 inline-block">
+            Envoyer un premier ECG
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
