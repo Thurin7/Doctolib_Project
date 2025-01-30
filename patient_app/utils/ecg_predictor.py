@@ -48,19 +48,19 @@ class ECGPredictor:
             n_normaux = sum(1 for x in classifications if x == 0)
             n_anormaux = sum(1 for x in classifications if x == 1)
 
-            # Générer des couleurs plus contrastées en évitant le blanc
-            cold_colors = sns.color_palette("Blues", n_normaux + 2)[1:]  # On saute la première couleur (trop claire)
-            warm_colors = sns.color_palette("Reds", n_anormaux + 2)[1:]  # Même chose pour éviter les tons trop pâles
+            # Génération sûre des couleurs
+            cold_colors = plt.cm.Blues(np.linspace(0.3, 0.8, max(n_normaux, 1)))
+            warm_colors = plt.cm.Reds(np.linspace(0.3, 0.8, max(n_anormaux, 1)))
             
             cold_index, warm_index = 0, 0  # Indices pour suivre les couleurs
             cycle_labels = []  # Pour stocker les labels des cycles
 
             for i, cycle in enumerate(cycles):
                 if classifications[i] == 0:
-                    color = cold_colors[cold_index]
+                    color = cold_colors[min(cold_index, len(cold_colors)-1)]
                     cold_index += 1
                 else:
-                    color = warm_colors[warm_index]
+                    color = warm_colors[min(warm_index, len(warm_colors)-1)]
                     warm_index += 1
 
                 # Ajouter chaque cycle avec sa couleur dans la légende
@@ -75,17 +75,20 @@ class ECGPredictor:
             ax.set_ylabel("Amplitude normalisée", fontsize=12)
             ax.grid(True, linestyle='--', linewidth=0.5, alpha=0.7)
 
-            # 📌 Légende principale : Afficher uniquement les cycles normaux/anormaux en bas à droite
+            # Légende principale
             legend_labels = {
-                "Cycles Normaux": cold_colors[10] if cold_colors else "blue",
-                "Cycles Anormaux": warm_colors[0] if warm_colors else "red"
+                "Cycles Normaux": 'blue',
+                "Cycles Anormaux": 'red'
             }
-            handles = [plt.Line2D([0], [0], color=color, linewidth=2, label=label) for label, color in legend_labels.items()]
+            handles = [plt.Line2D([0], [0], color=color, linewidth=2, label=label) 
+                    for label, color in legend_labels.items()]
             classification_legend = ax.legend(handles=handles, loc="lower right", fontsize=10, frameon=True)
 
-            # 📌 Légende des cycles : Organiser en colonnes (ncol=3) pour une meilleure lisibilité
-            handles = [plt.Line2D([0], [0], color=color, linewidth=1.5, label=label) for label, color in cycle_labels]
-            cycle_legend = ax.legend(handles=handles, loc="upper right", fontsize=8, frameon=True, ncol=3)
+            # Légende des cycles
+            handles = [plt.Line2D([0], [0], color=color, linewidth=1.5, label=label) 
+                    for label, color in cycle_labels]
+            cycle_legend = ax.legend(handles=handles, loc="upper right", fontsize=8, 
+                                    frameon=True, ncol=3, title="Cycles détaillés")
 
             # Ajouter la légende de classification après celle des cycles
             ax.add_artist(cycle_legend)
@@ -100,7 +103,9 @@ class ECGPredictor:
             return buffer.getvalue()  # Retourne l'image encodée en bytes
 
         except Exception as e:
-            print(f"Erreur lors de la génération des plots : {e}")
+            print(f"Erreur détaillée dans generate_plots : {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
     def calculate_confidence(self, probas_malade):

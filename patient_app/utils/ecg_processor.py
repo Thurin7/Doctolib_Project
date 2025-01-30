@@ -177,9 +177,16 @@ class ECGProcessor:
         cycles = []
         valid_peaks = []
         
+        print(f"Total des pics R détectés : {len(r_peaks)}")
+        print(f"Longueur du signal : {len(signal)}")
+        
         for peak in r_peaks:
-            if peak - before_r >= 0 and peak + after_r < len(signal):
-                # Extraire le cycle
+            # Ajouter un print pour chaque vérification
+            if peak - before_r < 0:
+                print(f"Pic {peak} ignoré : pas assez d'espace avant")
+            elif peak + after_r >= len(signal):
+                print(f"Pic {peak} ignoré : pas assez d'espace après")
+            else:
                 cycle = signal[peak - before_r:peak + after_r]
                 cycle_min = np.min(cycle)
                 cycle_max = np.max(cycle)
@@ -193,6 +200,7 @@ class ECGProcessor:
                 cycles.append(cycle_resampled)
                 valid_peaks.append(peak)
         
+        print(f"Nombre de cycles valides extraits : {len(cycles)}")
         return np.array(cycles), np.array(valid_peaks)
     
     def save_cycles(self, cycles, original_filename):
@@ -213,15 +221,14 @@ class ECGProcessor:
         return full_path
 
     def find_r_peaks(self, signal, cycle_length=None):
-        if cycle_length is None:
-            min_distance = 30
-        else:
-            min_distance = int(0.8 * cycle_length)
-            
-        peaks, _ = find_peaks(signal,
-                            height=350,
-                            distance=min_distance,
-                            prominence=50)
+        # Réduire le height et la prominence pour capturer plus de pics
+        peaks, properties = find_peaks(signal,
+                                    height=300,  # Réduire de 350 à 300
+                                    distance=20,  # Réduire la distance minimale
+                                    prominence=30)  # Réduire de 50 à 30
+        
+        print(f"Pics R détectés : {len(peaks)}")
+        print(f"Propriétés des pics : {properties}")
         return peaks
 
     def extract_cycles(self, signal, r_peaks, before_r=20, after_r=30, target_length=182):
@@ -247,6 +254,10 @@ class ECGProcessor:
         return np.array(cycles), np.array(valid_peaks)
     
     def save_cycles(self, cycles, original_filename):
+        # Ajouter des informations de debug
+        print(f"Cycles à sauvegarder : {cycles.shape}")
+        print(f"Min/Max des cycles : {np.min(cycles)}, {np.max(cycles)}")
+        
         # Créer le dossier processed_ecg s'il n'existe pas
         processed_dir = os.path.join(settings.MEDIA_ROOT, 'processed_ecg')
         os.makedirs(processed_dir, exist_ok=True)
