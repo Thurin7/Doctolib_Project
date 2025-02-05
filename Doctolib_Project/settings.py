@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'account_app',
+    'doctor_app',
     'patient_app',
 ]
 
