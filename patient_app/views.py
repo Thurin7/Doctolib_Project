@@ -161,14 +161,6 @@ class ECGUploadSuccessView(TemplateView):
                 if ecg.plots:
                     context['plots'] = base64.b64encode(ecg.plots).decode('utf-8')
 
-                # Ajouter des messages selon le niveau de risque
-                if ecg.risk_level == 'HIGH':
-                    messages.warning(self.request, "⚠️ Attention : Anomalies significatives détectées. Consultation médicale recommandée.")
-                elif ecg.risk_level == 'MEDIUM':
-                    messages.info(self.request, "ℹ️ Quelques irrégularités détectées. Surveillance recommandée.")
-                else:
-                    messages.success(self.request, "✅ ECG normal. Aucune anomalie significative détectée.")
-                
             # Nettoyer la session après utilisation
             self.request.session.pop('analyzed_ecg_id', None)
             self.request.session.pop('cycles_details', None)
