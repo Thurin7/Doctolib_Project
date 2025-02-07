@@ -7,6 +7,8 @@ from scipy.signal import find_peaks, butter, filtfilt
 from datetime import datetime
 import os
 from django.conf import settings
+import base64
+import json
 
 
 class ECGProcessor:
@@ -272,3 +274,20 @@ class ECGProcessor:
             except Exception as e:
                 print(f"Erreur lors de la sauvegarde des cycles : {str(e)}")
                 raise
+    
+    def save_analysis_results(self, cycles, results, original_filename):
+        processed_dir = os.path.join(settings.MEDIA_ROOT, 'processed_ecg')
+        os.makedirs(processed_dir, exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        json_filename = f"analysis_{timestamp}_{os.path.splitext(original_filename)[0]}.json"
+        json_path = os.path.join(processed_dir, json_filename)
+        
+        # Convertir les données en bytes en base64
+        if 'plots' in results and isinstance(results['plots'], bytes):
+            results['plots'] = base64.b64encode(results['plots']).decode('utf-8')
+        
+        with open(json_path, 'w') as f:
+            json.dump(results, f)
+        
+        return json_path

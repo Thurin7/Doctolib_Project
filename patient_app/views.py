@@ -75,6 +75,8 @@ class ECGUploadSuccessView(TemplateView):
             r_peaks = processor.find_r_peaks(signal, cycle_length)
             cycles, valid_peaks = processor.extract_cycles(signal, r_peaks)
             processed_file_path = processor.save_cycles(cycles, filename)
+            print(f"Chemin du fichier de cycles : {processed_file_path}")
+
 
             # Configuration des chemins pour le modèle et le scaler
             model_path = os.path.join(settings.BASE_DIR, 'patient_app', 'models', 'ecg_model_m1.h5')
@@ -101,17 +103,22 @@ class ECGUploadSuccessView(TemplateView):
             print("Debug - Interpretation:", results.get('interpretation'))
 
             # Création de l'ECG avec les plots
+
+            results = predictor.analyze_personal_ecg(cycles)
+            json_path = processor.save_analysis_results(cycles, results, filename)
+
             ecg = ECG.objects.create(
-                ecg_data=ecg_data,
-                processed_data_path=processed_file_path,
-                diagnosis_date=timezone.now(),
-                confidence_score=results['confidence_score'],
-                interpretation=results['interpretation'],
-                risk_level=results['risk_level'],
-                plots=plots_data,  # Utiliser plots_data ici
-                patient_notified=True,
-                doctor_notified=results['risk_level'] == 'HIGH'
-            )
+            ecg_data=ecg_data,
+            processed_data_path=processed_file_path,
+            diagnosis_date=timezone.now(),
+            confidence_score=results['confidence_score'],
+            interpretation=results['interpretation'],
+            risk_level=results['risk_level'],
+            plots=plots_data,
+            patient_notified=True,
+            doctor_notified=results['risk_level'] == 'HIGH',
+            cycles_analysis_path=json_path  # Ajoutez ce champ au modèle ECG
+        )
 
 
             # Stockage des cycles_details dans la session pour l'affichage
@@ -177,6 +184,32 @@ class ECGDetailView(DetailView):
     template_name = 'patient_app/ecg_detail.html'
     context_object_name = 'ecg'
     pk_url_kwarg = 'pk'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Convertir le score de confiance en pourcentage
+        ecg = self.object
+        print(f"ECG ID: {ecg.diagnosis_id}")
+        print(f"Doctor notes: {ecg.doctor_notes}")
+        print(f"Risk level: {ecg.risk_level}")
+        ecg.confidence_score = ecg.confidence_score * 100
+        
+        # Ajouter les plots en base64 si disponible
+        if ecg.plots:
+            context['plots'] = base64.b64encode(ecg.plots).decode('utf-8')
+        
+        # Récupérer les détails des cycles
+        try:
+            # Ajoutez votre logique pour extraire les détails des cycles
+            # Par exemple, si vous avez une méthode dans votre modèle ECG
+            context['cycles_details'] = ecg.get_cycle_details()
+        except Exception:
+            context['cycles_details'] = []
+        
+        print(f"Doctor notes: {ecg.doctor_notes}")
+        
+        return context
     
 class ECGHistoryView(ListView):
     model = ECG
