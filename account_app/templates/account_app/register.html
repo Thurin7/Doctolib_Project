@@ -70,6 +70,16 @@
                         <h4 class="text-lg font-semibold text-teal-800 mb-4">Informations patient</h4>
                         
                         <div class="space-y-4">
+
+                            <!-- Dans le bloc des champs spécifiques aux patients -->
+                            <div>
+                                <label class="block text-sm font-medium text-teal-700 mb-1">Médecin traitant</label>
+                                {{ form.doctor }}
+                                {% if form.doctor.errors %}
+                                    <p class="text-red-500 text-xs mt-1">{{ form.doctor.errors }}</p>
+                                {% endif %}
+                            </div>
+                            
                             <div>
                                 <label class="block text-sm font-medium text-teal-700 mb-1">Numéro de sécurité sociale</label>
                                 {{ form.social_security_number }}

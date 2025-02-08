@@ -27,7 +27,8 @@ class UserRegistrationView(CreateView):
                     birth_date=form.cleaned_data.get('birth_date'),
                     gender=form.cleaned_data.get('gender'),
                     phone=form.cleaned_data.get('patient_phone'),
-                    address=form.cleaned_data.get('address')
+                    address=form.cleaned_data.get('address'),
+                    doctor=form.cleaned_data.get('doctor')  # Ajoutez cette ligne
                 )
             elif role == 'DOCTOR':
                 # Créer le profil médecin

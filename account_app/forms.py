@@ -138,9 +138,22 @@ class UserRegistrationForm(UserCreationForm):
         })
     )
 
+    doctor = forms.ModelChoiceField(
+        queryset=Doctor.objects.all(),
+        required=False,
+        empty_label="Sélectionnez un médecin (optionnel)",
+        widget=forms.Select(attrs={
+            'class': 'w-full px-3 py-2 border rounded-lg'
+        })
+    )
+
     class Meta:
-        model = User
-        fields = ['first_name', 'last_name', 'email', 'role', 'password1', 'password2']
+            model = User
+            fields = ['first_name', 'last_name', 'email', 'role', 'password1', 'password2']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['doctor'].queryset = Doctor.objects.all()
 
     def clean(self):
         cleaned_data = super().clean()
