@@ -13,7 +13,5 @@ urlpatterns = [
         form_class=LoginForm,
         redirect_authenticated_user=True
     ), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(
-        next_page='account_app:login'
-    ), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='account_app:login'), name='logout'),
 ]
