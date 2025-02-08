@@ -10,7 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'account_app',
+    'doctor_app',
     'patient_app',
 ]
 
@@ -56,7 +59,7 @@ ROOT_URLCONF = 'Doctolib_Project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -126,3 +129,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 AUTH_USER_MODEL = 'account_app.User'
+
+
+# Pour gérer les fichiers uploadés
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+os.makedirs(MEDIA_ROOT / 'tmp', exist_ok=True)
+os.makedirs(MEDIA_ROOT / 'processed_ecg', exist_ok=True)
+LOGIN_URL = 'account_app:login'  # URL de connexion personnalisée
+LOGIN_REDIRECT_URL = 'patient_app:upload'  # Après connexion
+LOGOUT_REDIRECT_URL = 'account_app:login'  # Après déconnexions
+
+

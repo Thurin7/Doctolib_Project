@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto mt-8">
+    <h2 class="text-2xl font-bold mb-6">Historique des ECG</h2>
+    
+    {% if ecgs %}
+    <div class="bg-white shadow-md rounded">
+        <table class="min-w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risque</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score de Confiance</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for ecg in ecgs %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {{ ecg.diagnosis_date|date:"d/m/Y H:i" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        Patient #{{ ecg.id }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            {% if ecg.risk_level == 'HIGH' %}bg-red-100 text-red-800
+                            {% elif ecg.risk_level == 'MEDIUM' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ ecg.risk_level }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {{ ecg.confidence_score|floatformat:1 }}%
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="{% url 'patient_app:ecg_detail' ecg.diagnosis_id %}" 
+                           class="text-blue-500 hover:text-blue-700">
+                            Détails
+                        </a>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="relative group">
+                            <textarea 
+                                id="note-{{ ecg.diagnosis_id }}"
+                                class="w-full p-2 border rounded text-sm resize-none 
+                                       focus:outline-none focus:ring-2 focus:ring-blue-300 
+                                       group-hover:bg-gray-50 transition-colors"
+                                rows="3"
+                                placeholder="Ajouter une note médicale..."
+                            >{{ ecg.doctor_notes|default_if_none:"" }}</textarea>
+                            <button 
+                                onclick="saveNote('{{ ecg.diagnosis_id }}')"
+                                class="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm 
+                                       hover:bg-blue-600 transition-colors hidden group-hover:block">
+                                Enregistrer
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+    <div class="flex justify-center mt-4">
+        <div class="space-x-2">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" 
+                   class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                    Précédent
+                </a>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <span class="px-4 py-2 bg-blue-500 text-white rounded">{{ num }}</span>
+                {% else %}
+                    <a href="?page={{ num }}" 
+                       class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                        {{ num }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a href="{% url 'doctor_app:ecg_history' %}"
+                   class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                    Suivant
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="bg-yellow-100 text-yellow-700 p-4 rounded-lg">
+        <p>Aucun ECG n'a été analysé pour le moment.</p>
+    </div>
+    {% endif %}
+</div>
+
+    {% csrf_token %}
+
+    <script>
+        function saveNote(ecgId) {
+            const noteTextarea = document.getElementById(`note-${ecgId}`);
+            const saveButton = noteTextarea.nextElementSibling;
+            const noteContent = noteTextarea.value;
+    
+            // Change button state during save
+            saveButton.disabled = true;
+            saveButton.innerHTML = 'Envoi en cours...';
+            saveButton.classList.add('opacity-50', 'cursor-not-allowed');
+    
+            fetch(`/doctor/ecg/${ecgId}/note/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ doctor_notes: noteContent })
+            })
+            .then(response => response.json())
+            .then(() => {
+                // Reset button after successful save
+                saveButton.innerHTML = 'Enregistré ✓';
+                saveButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                saveButton.classList.add('bg-green-500');
+                setTimeout(() => {
+                    saveButton.innerHTML = 'Enregistrer';
+                    saveButton.classList.remove('bg-green-500');
+                    saveButton.disabled = false;
+                }, 2000);
+            })
+            .catch(() => {
+                // Reset button on error
+                saveButton.innerHTML = 'Erreur';
+                saveButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                saveButton.classList.add('bg-red-500');
+                setTimeout(() => {
+                    saveButton.innerHTML = 'Enregistrer';
+                    saveButton.classList.remove('bg-red-500');
+                    saveButton.disabled = false;
+                }, 2000);
+            });
+        }
+    </script>
+{% endblock %}

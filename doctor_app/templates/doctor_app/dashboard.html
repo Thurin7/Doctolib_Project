@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto mt-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white shadow rounded-lg p-6 text-center">
+            <h3 class="text-gray-500 text-lg">Total ECGs</h3>
+            <p class="text-3xl font-bold text-blue-600">{{ total_ecgs }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6 text-center">
+            <h3 class="text-gray-500 text-lg">Risque Élevé</h3>
+            <p class="text-3xl font-bold text-red-600">{{ high_risk_count }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6 text-center">
+            <h3 class="text-gray-500 text-lg">Risque Moyen</h3>
+            <p class="text-3xl font-bold text-yellow-600">{{ medium_risk_count }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-2xl font-bold mb-4">ECGs Récents à Risque</h2>
+        {% if high_risk_ecgs %}
+        <table class="min-w-full">
+            <thead>
+                <tr class="bg-gray-50">
+                    <th class="px-6 py-3 text-left">Date</th>
+                    <th class="px-6 py-3 text-left">Niveau de Risque</th>
+                    <th class="px-6 py-3 text-left">Score de Confiance</th>
+                    <th class="px-6 py-3 text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ecg in high_risk_ecgs %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-6 py-4">{{ ecg.diagnosis_date|date:"d/m/Y H:i" }}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded 
+                            {% if ecg.risk_level == 'HIGH' %}bg-red-100 text-red-800
+                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ ecg.risk_level }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">{{ ecg.confidence_score|floatformat:1 }}%</td>
+                    <td class="px-6 py-4">
+                        <a href="{% url 'patient_app:ecg_detail' ecg.diagnosis_id %}" 
+                           class="text-blue-500 hover:text-blue-700">
+                            Détails
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if high_risk_ecgs|length == 5 %}
+        <div class="mt-4 text-right">
+            <a href="{{ show_all_ecgs_url }}" class="text-blue-500 hover:text-blue-700">
+                Voir tous les ECG
+            </a>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <p class="text-gray-500">Aucun ECG récent à risque.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
