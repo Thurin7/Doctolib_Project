@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserRegistrationView, complete_profile, dashboard
+from .views import UserRegistrationView, dashboard
 from .forms import LoginForm
 from django.contrib.auth import views as auth_views
 
@@ -7,7 +7,6 @@ app_name = 'account_app'
 
 urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='register'),
-    path('complete_profile/', complete_profile, name='complete_profile'),
     path('dashboard/', dashboard, name='dashboard'),
     path('login/', auth_views.LoginView.as_view(
         template_name='account_app/login.html', 

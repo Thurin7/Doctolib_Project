@@ -6,11 +6,153 @@
         <h2 class="text-2xl font-bold mb-6">Inscription</h2>
         <form method="post">
             {% csrf_token %}
-            {{ form.as_p }}
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Prénom</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <p class="text-red-500 text-xs">{{ form.first_name.errors }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Nom</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                    <p class="text-red-500 text-xs">{{ form.last_name.errors }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <p class="text-red-500 text-xs">{{ form.email.errors }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Mot de passe</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                    <p class="text-red-500 text-xs">{{ form.password1.errors }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Confirmation du mot de passe</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <p class="text-red-500 text-xs">{{ form.password2.errors }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Rôle</label>
+                {{ form.role }}
+                {% if form.role.errors %}
+                    <p class="text-red-500 text-xs">{{ form.role.errors }}</p>
+                {% endif %}
+            </div>
+
+            <div id="patient-fields" class="hidden">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Numéro de sécurité sociale</label>
+                    {{ form.social_security_number }}
+                    {% if form.social_security_number.errors %}
+                        <p class="text-red-500 text-xs">{{ form.social_security_number.errors }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Date de naissance</label>
+                    {{ form.birth_date }}
+                    {% if form.birth_date.errors %}
+                        <p class="text-red-500 text-xs">{{ form.birth_date.errors }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Genre</label>
+                    {{ form.gender }}
+                    {% if form.gender.errors %}
+                        <p class="text-red-500 text-xs">{{ form.gender.errors }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Téléphone</label>
+                    {{ form.patient_phone }}
+                    {% if form.patient_phone.errors %}
+                        <p class="text-red-500 text-xs">{{ form.patient_phone.errors }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Adresse</label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                        <p class="text-red-500 text-xs">{{ form.address.errors }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div id="doctor-fields" class="hidden">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Numéro RPPS</label>
+                    {{ form.license_number }}
+                    {% if form.license_number.errors %}
+                        <p class="text-red-500 text-xs">{{ form.license_number.errors }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Spécialité</label>
+                    {{ form.specialty }}
+                    {% if form.specialty.errors %}
+                        <p class="text-red-500 text-xs">{{ form.specialty.errors }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Téléphone</label>
+                    {{ form.doctor_phone }}
+                    {% if form.doctor_phone.errors %}
+                        <p class="text-red-500 text-xs">{{ form.doctor_phone.errors }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
             <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
                 S'inscrire
             </button>
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.querySelector('#id_role');
+    const patientFields = document.getElementById('patient-fields');
+    const doctorFields = document.getElementById('doctor-fields');
+
+    function toggleFields() {
+        const selectedRole = roleSelect.value;
+        
+        if (selectedRole === 'PATIENT') {
+            patientFields.classList.remove('hidden');
+            doctorFields.classList.add('hidden');
+        } else if (selectedRole === 'DOCTOR') {
+            patientFields.classList.add('hidden');
+            doctorFields.classList.remove('hidden');
+        } else {
+            patientFields.classList.add('hidden');
+            doctorFields.classList.add('hidden');
+        }
+    }
+
+    roleSelect.addEventListener('change', toggleFields);
+    toggleFields(); // Initial call
+});
+</script>
 {% endblock %}

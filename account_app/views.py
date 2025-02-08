@@ -1,59 +1,62 @@
-
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
 from django.views.generic import CreateView
-from .forms import UserRegistrationForm, DoctorRegistrationForm, PatientRegistrationForm
-from .models import User, Doctor, Patient
+from django.contrib import messages
+from .forms import UserRegistrationForm
+from .models import User, Patient, Doctor
 
 class UserRegistrationView(CreateView):
     template_name = 'account_app/register.html'
     form_class = UserRegistrationForm
-    success_url = '/account/complete_profile/'
 
     def form_valid(self, form):
         # Créer l'utilisateur
         user = form.save()
-        login(self.request, user)
-        return super().form_valid(form)
+        
+        # Récupérer les données du formulaire
+        role = form.cleaned_data.get('role')
 
+        try:
+            if role == 'PATIENT':
+                # Créer le profil patient
+                Patient.objects.create(
+                    user=user,
+                    social_security_number=form.cleaned_data.get('social_security_number'),
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    birth_date=form.cleaned_data.get('birth_date'),
+                    gender=form.cleaned_data.get('gender'),
+                    phone=form.cleaned_data.get('patient_phone'),
+                    address=form.cleaned_data.get('address')
+                )
+            elif role == 'DOCTOR':
+                # Créer le profil médecin
+                Doctor.objects.create(
+                    user=user,
+                    license_number=form.cleaned_data.get('license_number'),
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    specialty=form.cleaned_data.get('specialty'),
+                    phone=form.cleaned_data.get('doctor_phone')
+                )
 
-@login_required
-def complete_profile(request):
-    user = request.user
-    
-    # Vérifie que l'utilisateur est authentifié
-    if not hasattr(user, 'role'):
-        return redirect('account_app:login')
-    
-    if request.method == 'POST':
-        if user.role == 'DOCTOR':
-            form = DoctorRegistrationForm(request.POST)
-            if form.is_valid():
-                doctor = form.save(commit=False)
-                doctor.user = user
-                doctor.first_name = user.first_name
-                doctor.last_name = user.last_name
-                doctor.save()
-                return redirect('account_app:dashboard')
-        elif user.role == 'PATIENT':
-            form = PatientRegistrationForm(request.POST)
-            if form.is_valid():
-                patient = form.save(commit=False)
-                patient.user = user
-                patient.first_name = user.first_name
-                patient.last_name = user.last_name
-                patient.save()
-                return redirect('account_app:dashboard')
-    else:
-        if user.role == 'DOCTOR':
-            form = DoctorRegistrationForm()
-        elif user.role == 'PATIENT':
-            form = PatientRegistrationForm()
-        else:
+            # Déconnexion explicite
+            logout(self.request)
+
+            # Ajouter un message de succès
+            messages.success(self.request, 'Compte créé avec succès. Veuillez vous connecter.')
+            
+            # Redirection vers la page de login
             return redirect('account_app:login')
 
-    return render(request, 'account_app/complete_profile.html', {'form': form})
+        except Exception as e:
+            # En cas d'erreur, supprimer l'utilisateur créé
+            user.delete()
+            messages.error(self.request, f'Erreur lors de la création du profil : {str(e)}')
+            return self.form_invalid(form)
+
+    def get_success_url(self):
+        return None
 
 def dashboard(request):
     # Vue du tableau de bord qui diffère selon le rôle

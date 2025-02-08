@@ -3,10 +3,33 @@
 {% block content %}
 <div class="container mx-auto mt-8">
     <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+        {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                    <div class="{% if message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %} p-2 rounded">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         <h2 class="text-2xl font-bold mb-6">Connexion</h2>
         <form method="post">
             {% csrf_token %}
-            {{ form.as_p }}
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">{{ form.username.label }}</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <p class="text-red-500 text-xs italic">{{ form.username.errors }}</p>
+                {% endif %}
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">{{ form.password.label }}</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <p class="text-red-500 text-xs italic">{{ form.password.errors }}</p>
+                {% endif %}
+            </div>
             <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
                 Se connecter
             </button>
