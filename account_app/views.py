@@ -44,8 +44,11 @@ class UserRegistrationView(CreateView):
             logout(self.request)
 
             # Ajouter un message de succès
-            messages.success(self.request, 'Compte créé avec succès. Veuillez vous connecter.')
-            
+            messages.success(
+                self.request, 
+                'Compte créé avec succès. Veuillez vous connecter.'
+            )
+                        
             # Redirection vers la page de login
             return redirect('account_app:login')
 

@@ -119,3 +119,6 @@ MESSAGE_TAGS = {
     messages.WARNING: 'alert-warning',
     messages.ERROR: 'alert-danger',
 }
+
+# Désactiver les messages de framework par défaut
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
