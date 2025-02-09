@@ -1,66 +1,104 @@
 # Doctolib Project
 
-## Installation
+## 📋 Table des matières
+- [Installation](#installation)
+- [Structure du projet](#structure-du-projet)
+- [Base de données](#base-de-données)
+- [Contributeurs](#contributeurs)
+- [Notes de développement](#notes-de-développement)
 
-1. Cloner le projet
-```bash
-git clone [votre-lien-github]
-cd Doctolib_Project
-```
+---
 
-2. Créer et activer l'environnement virtuel
-```bash
-python3 -m venv env
-source env/bin/activate  # Sur MacOS/Linux
-# ou
-.\env\Scripts\activate  # Sur Windows
-```
+## 🚀 Installation
 
-3. Installer les dépendances
-```bash
-pip install django
-```
+### Prérequis
+- **Python 3.9+**
+- **pip** (gestionnaire de paquets Python)
 
-4. Appliquer les migrations
-```bash
-python manage.py migrate
-```
+### Étapes d'installation
 
-5. Créer un superuser
-```bash
-python manage.py createsuperuser
-```
-Note : Pour le rôle, utiliser 'ADMIN' (en majuscules)
+1. **Cloner le projet**
+   ```bash
+   git clone [votre-lien-github]
+   cd Doctolib_Project
+   ```
 
-6. Lancer le serveur
-```bash
-python manage.py runserver
-```
+2. **Créer et activer l'environnement virtuel**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate  # Sur MacOS/Linux
+   # ou
+   .\.venv\Scripts\activate  # Sur Windows
+   ```
 
-## Structure du projet
+3. **Installer les dépendances**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-- `account_app/` : Gestion des utilisateurs (User, Patient, Doctor)
-- `patient_app/` : Gestion des ECG
+4. **Configurer l'environnement**  
+   Créez un fichier `.env` à la racine du projet et ajoutez les variables d'environnement nécessaires.
 
-## Base de données
+5. **Appliquer les migrations**
+   ```bash
+   python manage.py migrate
+   ```
+
+6. **Créer un superuser**
+   ```bash
+   python manage.py createsuperuser
+   ```
+   📌 **Note :** Pour le rôle, utilisez `'ADMIN'` (en majuscules).
+
+7. **Créer le dossier pour les sessions**
+   ```bash
+   mkdir session_files
+   chmod 755 session_files
+   ```
+
+8. **Lancer le serveur**
+   ```bash
+   python manage.py runserver
+   ```
+
+---
+
+## 🏗️ Structure du projet
+
+- **`account_app/`** : Gestion des utilisateurs (User, Patient, Doctor)
+- **`patient_app/`** : Gestion des ECG
+- **`doctor_app/`** : Fonctionnalités spécifiques aux médecins
+
+---
+
+## 💾 Base de données
 
 ### Models principaux :
-- User : Modèle d'authentification personnalisé
-- Patient : Stockage des informations patients
-- Doctor : Stockage des informations médecins
-- ECG : Stockage et analyse des ECG
+- **User** : Modèle d'authentification personnalisé
+- **Patient** : Stockage des informations patients
+- **Doctor** : Stockage des informations médecins
+- **ECG** : Stockage et analyse des ECG
 
 ### Relations :
-- Un médecin peut avoir plusieurs patients
-- Un patient a un seul médecin
-- Un patient peut avoir plusieurs ECG
+- Un **médecin** peut avoir **plusieurs patients**.
+- Un **patient** a **un seul médecin**.
+- Un **patient** peut avoir **plusieurs ECG**.
 
-## Contributeurs
-- Lucien LACHARMOISE
-- Clément ASENSIO
-- Emma COCO
-- Cheryle Adebada
+---
 
-## Notes de développement
-- Utiliser Python 3.9+
-- Django 4.2+
+## 👥 Contributeurs
+- **Lucien LACHARMOISE**
+- **Clément ASENSIO**
+- **Emma COCO**
+- **Cheryle ADEBADA**
+
+---
+
+## 📝 Notes de développement
+- **Utiliser Python 3.9+**
+- **Django 4.2+**
+- Les **sessions** sont stockées dans des fichiers plutôt que dans la base de données.
+- Consultez `requirements.txt` pour la liste complète des dépendances et leurs versions.
+- Pour toute question ou problème, n'hésitez pas à **ouvrir une issue** sur le dépôt GitHub du projet.
+
+**Bonne utilisation ! 🎉**
