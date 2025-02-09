@@ -6,6 +6,7 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 from django.urls import reverse_lazy
 from django.contrib import messages
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.utils import timezone
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -183,15 +184,22 @@ class ECGUploadSuccessView(TemplateView):
         
         return context
 
-class ECGDetailView(DetailView):
+class ECGDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = ECG
     template_name = 'patient_app/ecg_detail.html'
     context_object_name = 'ecg'
     pk_url_kwarg = 'pk'
 
-    def get_queryset(self):
-        return ECG.objects.filter(patient__user=self.request.user)
+    def test_func(self):
+        ecg = self.get_object()
+        return self.request.user == ecg.patient.user or self.request.user == ecg.patient.doctor.user
 
+    def get_queryset(self):
+        if hasattr(self.request.user, 'patient'):
+            return ECG.objects.filter(patient__user=self.request.user)
+        elif hasattr(self.request.user, 'doctor'):
+            return ECG.objects.filter(patient__doctor=self.request.user.doctor)
+        return ECG.objects.none()
     def get_object(self, queryset=None):
         pk = self.kwargs.get(self.pk_url_kwarg)
         return get_object_or_404(self.get_queryset(), pk=pk)

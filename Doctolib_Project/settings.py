@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Applications personnalisées
+    'Doctolib_Project',
     'account_app',
     'doctor_app',
     'patient_app',

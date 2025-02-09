@@ -1,3 +1,5 @@
+{% load custom_tags %}
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -21,7 +23,7 @@
             <div class="flex justify-between items-center">
                 <div class="flex space-x-7">
                     <div>
-                        <a href="{% url 'patient_app:upload' %}" class="flex items-center py-4">
+                        <a href="{% get_home_url %}" class="flex items-center py-4">
                             <span class="font-semibold text-gray-500 text-lg">ECG Analyzer</span>
                         </a>
                     </div>
