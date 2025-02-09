@@ -63,6 +63,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 20,
+            'check_same_thread': False,
+        }
     }
 }
 
@@ -123,3 +127,7 @@ MESSAGE_TAGS = {
 
 # Désactiver les messages de framework par défaut
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.file'
+SESSION_FILE_PATH = os.path.join(BASE_DIR, 'session_files')
