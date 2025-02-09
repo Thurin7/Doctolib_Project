@@ -6,8 +6,14 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 from django.urls import reverse_lazy
 from django.contrib import messages
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.utils import timezone
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import get_object_or_404
+from account_app.models import Patient
 import os
 import base64
 from .forms import ECGUploadForm
@@ -17,10 +23,16 @@ from .models import ECG
 from django.views.generic import DetailView, ListView
 from .models import ECG
 
+
 class ECGUploadView(FormView):
     template_name = 'patient_app/upload.html'
     form_class = ECGUploadForm
     success_url = reverse_lazy('patient_app:upload_success')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['previous_ecgs'] = ECG.objects.filter(patient__user=self.request.user).order_by('-diagnosis_date')[:5]
+        return context
 
     def form_valid(self, form):
         file = form.cleaned_data['ecg_file']
@@ -46,10 +58,11 @@ class ECGUploadView(FormView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Récupérer les 5 dernières analyses ECG, sans filtrage
-        context['previous_ecgs'] = ECG.objects.order_by('-diagnosis_date')[:5]
+        # Récupérer les 5 dernières analyses ECG du patient connecté
+        context['previous_ecgs'] = ECG.objects.filter(patient__user=self.request.user).order_by('-diagnosis_date')[:5]
         return context
 
+@method_decorator(login_required, name='dispatch')
 class ECGUploadSuccessView(TemplateView):
     template_name = 'patient_app/upload_success.html'
 
@@ -62,6 +75,12 @@ class ECGUploadSuccessView(TemplateView):
             return redirect('patient_app:upload')
         
         try:
+            try:
+                patient = Patient.objects.get(user=request.user)
+            except Patient.DoesNotExist:
+                messages.error(request, "Profil patient non trouvé")
+                return redirect('patient_app:upload')
+            
             # Traitement de l'ECG
             processor = ECGProcessor()
             signal = processor.load_data(tmp_file)
@@ -95,19 +114,13 @@ class ECGUploadSuccessView(TemplateView):
             if plots_data and not isinstance(plots_data, bytes):
                 plots_data = bytes(plots_data)
 
-            print("Debug - Interpretation:", results.get('interpretation'))
-
-            # Dans la vue, avant de créer l'ECG
-            print("Debug - Plots data type:", type(results.get('plots')))
-            print("Debug - Plots data size:", len(results.get('plots')) if results.get('plots') else 'None')
-            print("Debug - Interpretation:", results.get('interpretation'))
-
             # Création de l'ECG avec les plots
 
             results = predictor.analyze_personal_ecg(cycles)
             json_path = processor.save_analysis_results(cycles, results, filename)
 
             ecg = ECG.objects.create(
+            patient=request.user.patient,
             ecg_data=ecg_data,
             processed_data_path=processed_file_path,
             diagnosis_date=timezone.now(),
@@ -171,11 +184,25 @@ class ECGUploadSuccessView(TemplateView):
         
         return context
 
-class ECGDetailView(DetailView):
+class ECGDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = ECG
     template_name = 'patient_app/ecg_detail.html'
     context_object_name = 'ecg'
     pk_url_kwarg = 'pk'
+
+    def test_func(self):
+        ecg = self.get_object()
+        return self.request.user == ecg.patient.user or self.request.user == ecg.patient.doctor.user
+
+    def get_queryset(self):
+        if hasattr(self.request.user, 'patient'):
+            return ECG.objects.filter(patient__user=self.request.user)
+        elif hasattr(self.request.user, 'doctor'):
+            return ECG.objects.filter(patient__doctor=self.request.user.doctor)
+        return ECG.objects.none()
+    def get_object(self, queryset=None):
+        pk = self.kwargs.get(self.pk_url_kwarg)
+        return get_object_or_404(self.get_queryset(), pk=pk)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -203,12 +230,11 @@ class ECGDetailView(DetailView):
         
         return context
     
-class ECGHistoryView(ListView):
+class ECGHistoryView(LoginRequiredMixin, ListView):
     model = ECG
     template_name = 'patient_app/ecg_history.html'
     context_object_name = 'ecgs'
     paginate_by = 10
 
     def get_queryset(self):
-        # Récupérer tous les ECG, triés par date de diagnostic (les plus récents en premier)
-        return ECG.objects.order_by('-diagnosis_date')
+        return ECG.objects.filter(patient__user=self.request.user).order_by('-diagnosis_date')

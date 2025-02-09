@@ -1,17 +1,42 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto mt-8">
-    <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-2xl font-bold mb-4">Connexion</h2>
+<div class="min-h-screen py-6 flex items-center justify-center">
+    <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-sky-100">
+        <h2 class="text-2xl font-bold text-sky-900 text-center mb-6">Connexion</h2>
         
         <form method="post">
             {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {{ message.tags }} {{ message.extra_tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-sky-800 mb-2">{{ form.username.label }}</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.username.errors }}</p>
+                {% endif %}
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-sky-800 mb-2">{{ form.password.label }}</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.password.errors }}</p>
+                {% endif %}
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-sky-600 to-blue-600 text-white py-2 rounded-lg hover:from-sky-700 hover:to-blue-700 transition-all duration-300 shadow-md hover:shadow-lg">
                 Se connecter
             </button>
         </form>
+        <p class="text-center mt-4 text-sm text-gray-600">
+            Pas de compte ? <a href="{% url 'account_app:register' %}" class="text-sky-600 hover:text-sky-800 font-medium">Inscrivez-vous</a>
+        </p>
     </div>
 </div>
 {% endblock %}

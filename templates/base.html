@@ -1,3 +1,5 @@
+{% load custom_tags %}
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -7,16 +9,44 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
+    {% if messages %}
+        <div class="fixed top-0 right-0 m-4 z-50">
+            {% for message in messages %}
+                <div class="bg-{% if message.tags == 'error' %}red{% else %}green{% endif %}-100 border border-{% if message.tags == 'error' %}red{% else %}green{% endif %}-400 text-{% if message.tags == 'error' %}red{% else %}green{% endif %}-700 px-4 py-3 rounded relative" role="alert">
+                    <span class="block sm:inline">{{ message }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
     <nav class="bg-white shadow-lg">
         <div class="max-w-6xl mx-auto px-4">
-            <div class="flex justify-between">
+            <div class="flex justify-between items-center">
                 <div class="flex space-x-7">
                     <div>
-                        <a href="{% url 'patient_app:upload' %}" class="flex items-center py-4">
+                        <a href="{% get_home_url %}" class="flex items-center py-4">
                             <span class="font-semibold text-gray-500 text-lg">ECG Analyzer</span>
                         </a>
                     </div>
                 </div>
+                
+                {% if user.is_authenticated %}
+                <div class="relative">
+                    <button id="account-menu-btn" class="flex items-center py-4 text-gray-500 text-lg font-semibold hover:text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Mon compte
+                    </button>
+                    
+                    <div id="account-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
+                        <div class="py-1">
+                            <a href="{% url 'account_app:logout' %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                Se déconnecter
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -25,5 +55,28 @@
         {% block content %}
         {% endblock %}
     </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const accountMenuBtn = document.getElementById('account-menu-btn');
+        const accountMenu = document.getElementById('account-menu');
+
+        // Toggle menu visibility
+        accountMenuBtn.addEventListener('click', function(event) {
+            event.stopPropagation(); // Prevent document click from immediately closing
+            accountMenu.classList.toggle('hidden');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function() {
+            accountMenu.classList.add('hidden');
+        });
+
+        // Prevent menu from closing when clicking inside
+        accountMenu.addEventListener('click', function(event) {
+            event.stopPropagation();
+        });
+    });
+    </script>
 </body>
 </html>
