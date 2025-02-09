@@ -1,15 +1,11 @@
 import pandas as pd
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from scipy.signal import find_peaks, butter, filtfilt
 from datetime import datetime
 import os
 from django.conf import settings
 import base64
 import json
-
 
 class ECGProcessor:
     def __init__(self):
@@ -19,7 +15,7 @@ class ECGProcessor:
         self.after_r = 20    
         self.peak_params = {
         'height': 0.4,
-        'distance': 30,    # Distance minimale entre pics (~60ms à 500Hz)
+        'distance': 30,
         'prominence': 0.3
         }
         self.r_peak_params = {
@@ -137,7 +133,6 @@ class ECGProcessor:
             
             peaks, properties = self.detect_peaks(normalized_signal, is_normalized=True)
             
-            self._create_debug_plots(signal, filtered_signal, normalized_signal, peaks)
             stats = self._calculate_statistics(peaks)
             
             # On retourne uniquement la distance moyenne pour la compatibilité
@@ -206,38 +201,38 @@ class ECGProcessor:
             raise
 
     def save_cycles(self, cycles, original_filename):
-            """Sauvegarde les cycles traités dans un fichier CSV.
+        """Sauvegarde les cycles traités dans un fichier CSV.
+        
+        Args:
+            cycles (numpy.ndarray): Tableau des cycles traités
+            original_filename (str): Nom du fichier original
             
-            Args:
-                cycles (numpy.ndarray): Tableau des cycles traités
-                original_filename (str): Nom du fichier original
-                
-            Returns:
-                str: Chemin du fichier sauvegardé
-            """
-            try:
-                # Création du répertoire de sortie
-                processed_dir = os.path.join(settings.MEDIA_ROOT, 'processed_ecg')
-                os.makedirs(processed_dir, exist_ok=True)
-                
-                # Génération du nom de fichier avec timestamp
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"processed_{timestamp}_{os.path.splitext(original_filename)[0]}.csv"
-                full_path = os.path.join(processed_dir, filename)
-                
-                # Debug avant sauvegarde
-                print(f"Sauvegarde des cycles : shape={cycles.shape}")
-                print(f"Valeurs min/max : {np.min(cycles)}, {np.max(cycles)}")
-                
-                # Sauvegarde des cycles
-                np.savetxt(full_path, cycles, delimiter=',')
-                print(f"Cycles sauvegardés dans {full_path}")
-                
-                return full_path
-                
-            except Exception as e:
-                print(f"Erreur lors de la sauvegarde des cycles : {str(e)}")
-                raise
+        Returns:
+            str: Chemin du fichier sauvegardé
+        """
+        try:
+            # Création du répertoire de sortie
+            processed_dir = os.path.join(settings.MEDIA_ROOT, 'processed_ecg')
+            os.makedirs(processed_dir, exist_ok=True)
+            
+            # Génération du nom de fichier avec timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"processed_{timestamp}_{os.path.splitext(original_filename)[0]}.csv"
+            full_path = os.path.join(processed_dir, filename)
+            
+            # Debug avant sauvegarde
+            print(f"Sauvegarde des cycles : shape={cycles.shape}")
+            print(f"Valeurs min/max : {np.min(cycles)}, {np.max(cycles)}")
+            
+            # Sauvegarde des cycles
+            np.savetxt(full_path, cycles, delimiter=',')
+            print(f"Cycles sauvegardés dans {full_path}")
+            
+            return full_path
+            
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde des cycles : {str(e)}")
+            raise
     
     def save_analysis_results(self, cycles, results, original_filename):
         processed_dir = os.path.join(settings.MEDIA_ROOT, 'processed_ecg')
