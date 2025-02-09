@@ -29,9 +29,12 @@ class DoctorDashboardView(TemplateView):
 
 class ECGHistoryView(ListView):
     model = ECG
-    template_name = 'doctor_app/ecg_history.html'
+    template_name = 'patient_app/ecg_history.html'
     context_object_name = 'ecgs'
     paginate_by = 10
+
+    def get_queryset(self):
+        return ECG.objects.filter(patient__user=self.request.user).order_by('-diagnosis_date')
 
     def get_queryset(self):
         return ECG.objects.order_by(
