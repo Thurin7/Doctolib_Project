@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load custom_filters %}
+
 {% block content %}
 <div class="container mx-auto mt-8">
     <h2 class="text-2xl font-bold mb-6">Historique des ECG</h2>
@@ -24,7 +26,18 @@
                         {{ ecg.diagnosis_date|date:"d/m/Y H:i" }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        Patient #{{ ecg.id }}
+                        <div class="flex flex-col">
+                            <span class="font-medium">{{ ecg.patient.first_name }} {{ ecg.patient.last_name }}</span>
+                            <span class="text-gray-500 text-sm">
+                                Genre : {{ ecg.patient.gender|upper }}
+                            </span>
+                            <span class="text-gray-500 text-sm">
+                                Âge : {{ ecg.patient.birth_date|calculate_age }} ans
+                            </span>
+                            <span class="text-gray-500 text-xs">
+                                N° Sécu : {{ ecg.patient.social_security_number }}
+                            </span>
+                        </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -60,12 +73,6 @@
                                 Enregistrer
                             </button>
                         </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <a href="{% url 'patient_app:ecg_detail' ecg.diagnosis_id %}" 
-                           class="text-blue-500 hover:text-blue-700">
-                            Détails
-                        </a>
                     </td>
                 </tr>
                 {% endfor %}
