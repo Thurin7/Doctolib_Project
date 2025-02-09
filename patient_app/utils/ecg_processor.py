@@ -147,42 +147,6 @@ class ECGProcessor:
             print(f"Erreur dans analyze_cycle_distance : {e}")
             raise
 
-    def _create_debug_plots(self, raw_signal, filtered_signal, normalized_signal, peaks):
-        """Méthode séparée pour la création des visualisations"""
-        try:
-            plt.figure(figsize=(15, 10))
-            
-            plt.subplot(4, 1, 1)
-            plt.plot(raw_signal)
-            plt.title("Signal brut Arduino")
-            plt.grid(True)
-
-            plt.subplot(4, 1, 2)
-            plt.plot(filtered_signal)
-            plt.title("Signal filtré")
-            plt.grid(True)
-
-            plt.subplot(4, 1, 3)
-            plt.plot(normalized_signal)
-            plt.title("Signal normalisé")
-            plt.grid(True)
-
-            plt.subplot(4, 1, 4)
-            plt.plot(normalized_signal)
-            plt.plot(peaks, normalized_signal[peaks], "rx")
-            plt.title(f"Détection des pics ({len(peaks)} pics)")
-            plt.grid(True)
-
-            plt.tight_layout()
-            debug_path = os.path.join(settings.MEDIA_ROOT, 'debug')
-            os.makedirs(debug_path, exist_ok=True)
-            plt.savefig(os.path.join(debug_path, 'debug_arduino.png'))
-            plt.close()
-            
-        except Exception as e:
-            print(f"Erreur lors de la création des plots: {str(e)}")
-            raise
-
     def _calculate_statistics(self, peaks):
         """Méthode séparée pour le calcul des statistiques"""
         stats = {

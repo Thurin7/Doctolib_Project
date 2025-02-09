@@ -8,6 +8,9 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from django.utils import timezone
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from account_app.models import Patient
 import os
 import base64
 from .forms import ECGUploadForm
@@ -16,6 +19,7 @@ from .utils.ecg_predictor import ECGPredictor
 from .models import ECG
 from django.views.generic import DetailView, ListView
 from .models import ECG
+
 
 class ECGUploadView(FormView):
     template_name = 'patient_app/upload.html'
@@ -50,6 +54,7 @@ class ECGUploadView(FormView):
         context['previous_ecgs'] = ECG.objects.order_by('-diagnosis_date')[:5]
         return context
 
+@method_decorator(login_required, name='dispatch')
 class ECGUploadSuccessView(TemplateView):
     template_name = 'patient_app/upload_success.html'
 
@@ -62,6 +67,12 @@ class ECGUploadSuccessView(TemplateView):
             return redirect('patient_app:upload')
         
         try:
+            try:
+                patient = Patient.objects.get(user=request.user)
+            except Patient.DoesNotExist:
+                messages.error(request, "Profil patient non trouvé")
+                return redirect('patient_app:upload')
+            
             # Traitement de l'ECG
             processor = ECGProcessor()
             signal = processor.load_data(tmp_file)
@@ -95,19 +106,13 @@ class ECGUploadSuccessView(TemplateView):
             if plots_data and not isinstance(plots_data, bytes):
                 plots_data = bytes(plots_data)
 
-            print("Debug - Interpretation:", results.get('interpretation'))
-
-            # Dans la vue, avant de créer l'ECG
-            print("Debug - Plots data type:", type(results.get('plots')))
-            print("Debug - Plots data size:", len(results.get('plots')) if results.get('plots') else 'None')
-            print("Debug - Interpretation:", results.get('interpretation'))
-
             # Création de l'ECG avec les plots
 
             results = predictor.analyze_personal_ecg(cycles)
             json_path = processor.save_analysis_results(cycles, results, filename)
 
             ecg = ECG.objects.create(
+            patient=patient,
             ecg_data=ecg_data,
             processed_data_path=processed_file_path,
             diagnosis_date=timezone.now(),
