@@ -12,7 +12,7 @@ class ECGProcessor:
         self.sampling_freq = 120.0 
         self.target_length = 182
         self.before_r = 20    
-        self.after_r = 20    
+        self.after_r = 30    
         self.peak_params = {
         'height': 0.4,
         'distance': 30,
