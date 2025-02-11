@@ -48,7 +48,7 @@
                             {{ ecg.get_risk_level_display }}
                         </span>
                     </td>
-                    <td class="px-6 py-4">{{ ecg.confidence_score|floatformat:1 }}%</td>
+                    <td class="px-6 py-4">{{ ecg.confidence_score|multiply:100|floatformat:1 }}%</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex flex-col">
                             <span class="font-medium">{{ ecg.patient.first_name }} {{ ecg.patient.last_name }}</span>

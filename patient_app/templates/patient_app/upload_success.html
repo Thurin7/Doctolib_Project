@@ -102,7 +102,15 @@
                 </div>
             </div>
             {% endif %}
-
+            {% if ecg.has_pathology_details %}
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">Analyse complémentaire</h3>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p><strong>Type de pathologie :</strong> {{ pathology_type }}</p>
+                    <pre class="whitespace-pre-wrap text-sm text-gray-700 font-mono leading-relaxed">{{ pathology_interpretation }}</pre>
+                </div>
+            </div>
+            {% endif %}
             <!-- Informations supplémentaires -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div class="bg-gray-50 p-4 rounded-lg">
