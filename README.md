@@ -100,6 +100,9 @@
 - Consultez `requirements.txt` pour la liste complète des dépendances et leurs versions.
 - Pour toute question ou problème, n'hésitez pas à **ouvrir une issue** sur le dépôt GitHub du projet.
 
+**Bonne utilisation ! 🎉**
+
+# ANNEXES
 
 ## Études menées lors de l'analyse des données MIT-BIH et de l'entrainement des réseaux de neurones"
 
@@ -107,7 +110,9 @@
 
 [Rapport Doctolib_Réseaux de neurones.pdf](https://github.com/user-attachments/files/18769091/Rapport.Doctolib_Reseaux.de.neurones.pdf)
 
+## Présentation orale
 
 
-**Bonne utilisation ! 🎉**
+
+
 
