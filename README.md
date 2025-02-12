@@ -105,7 +105,7 @@
 
 # ANNEXES
 
-## Études menées lors de l'analyse des données MIT-BIH et de l'entrainement des réseaux de neurones"
+## Études menées lors de l'analyse des données MIT-BIH et de l'entrainement des réseaux de neurones
 
 [Projet Doctolib - Rapport.docx](https://github.com/user-attachments/files/18769086/Projet.Doctolib.-.Rapport.docx)
 
@@ -113,7 +113,5 @@
 
 ## Présentation orale
 
-
-
-
+[Présentation_ECG Analyzer_compressed.pdf](https://github.com/user-attachments/files/18769262/Presentation_ECG.Analyzer_compressed.pdf)
 
