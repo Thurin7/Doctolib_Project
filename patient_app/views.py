@@ -75,11 +75,7 @@ class ECGUploadSuccessView(TemplateView):
             return redirect('patient_app:upload')
         
         try:
-            try:
-                patient = Patient.objects.get(user=request.user)
-            except Patient.DoesNotExist:
-                messages.error(request, "Profil patient non trouvé")
-                return redirect('patient_app:upload')
+            patient = Patient.objects.get(user=request.user)
             
             # Traitement de l'ECG
             processor = ECGProcessor()
@@ -94,47 +90,49 @@ class ECGUploadSuccessView(TemplateView):
             r_peaks = processor.find_r_peaks(signal, cycle_length)
             cycles, valid_peaks = processor.extract_cycles(signal, r_peaks)
             processed_file_path = processor.save_cycles(cycles, filename)
-            print(f"Chemin du fichier de cycles : {processed_file_path}")
 
-
-            # Configuration des chemins pour le modèle et le scaler
-            model_path = os.path.join(settings.BASE_DIR, 'patient_app', 'models', 'ecg_model_m1.h5')
-            scaler_path = os.path.join(settings.BASE_DIR, 'patient_app', 'models', 'ecg_scaler_m1.joblib')
+            # Configuration des chemins pour les modèles et scalers
+            model_path_m1 = os.path.join(settings.BASE_DIR, 'patient_app', 'models', 'ecg_model_m1.h5')
+            scaler_path_m1 = os.path.join(settings.BASE_DIR, 'patient_app', 'models', 'ecg_scaler_m1.joblib')
             
-            # Initialisation et analyse avec le nouveau prédicteur
-            predictor = ECGPredictor(model_path=model_path, scaler_path=scaler_path)
+            # Initialisation et analyse avec le prédicteur
+            predictor = ECGPredictor(model_path=model_path_m1, scaler_path=scaler_path_m1)
             results = predictor.analyze_personal_ecg(cycles)
 
             # Lecture du fichier ECG
             with open(tmp_file, 'rb') as file:
                 ecg_data = file.read()
 
-            # Conversion des plots en bytes si nécessaire
+            # Conversion des plots en bytes
             plots_data = results.get('plots')
             if plots_data and not isinstance(plots_data, bytes):
                 plots_data = bytes(plots_data)
 
-            # Création de l'ECG avec les plots
-
-            results = predictor.analyze_personal_ecg(cycles)
+            # Sauvegarder l'analyse dans un fichier JSON
             json_path = processor.save_analysis_results(cycles, results, filename)
 
+            # Création de l'ECG 
             ecg = ECG.objects.create(
-            patient=request.user.patient,
-            ecg_data=ecg_data,
-            processed_data_path=processed_file_path,
-            diagnosis_date=timezone.now(),
-            confidence_score=results['confidence_score'],
-            interpretation=results['interpretation'],
-            risk_level=results['risk_level'],
-            plots=plots_data,
-            patient_notified=True,
-            doctor_notified=results['risk_level'] == 'HIGH',
-            cycles_analysis_path=json_path  # Ajoutez ce champ au modèle ECG
-        )
+                patient=request.user.patient,
+                ecg_data=ecg_data,
+                processed_data_path=processed_file_path,
+                diagnosis_date=timezone.now(),
+                confidence_score=results['confidence_score'],
+                interpretation=results['interpretation'],
+                risk_level=results['risk_level'],
+                plots=plots_data,
+                patient_notified=True,
+                doctor_notified=results['risk_level'] == 'HIGH',
+                cycles_analysis_path=json_path,
+                
+                # Nouvelles lignes pour le modèle 2
+                has_pathology_details=results.get('has_pathology_details', False),
+                pathology_type=results.get('pathology_type'),
+                pathology_confidence=results.get('pathology_confidence'),
+                pathology_interpretation=results.get('pathology_interpretation')
+            )
 
-
-            # Stockage des cycles_details dans la session pour l'affichage
+            # Stockage des détails dans la session
             request.session['cycles_details'] = results.get('cycles_details', [])
             request.session['analyzed_ecg_id'] = ecg.diagnosis_id
 
@@ -161,7 +159,7 @@ class ECGUploadSuccessView(TemplateView):
         try:
             # Récupérer l'ECG analysé
             ecg_id = self.request.session.get('analyzed_ecg_id')
-           
+        
             if ecg_id:
                 ecg = ECG.objects.get(diagnosis_id=ecg_id)
                 context['ecg'] = ecg
@@ -170,13 +168,23 @@ class ECGUploadSuccessView(TemplateView):
                 ecg.confidence_score = ecg.confidence_score * 100
                 
                 context['cycles_details'] = self.request.session.get('cycles_details', [])
-              
+            
                 if ecg.plots:
                     context['plots'] = base64.b64encode(ecg.plots).decode('utf-8')
 
-            # Nettoyer la session après utilisation
-            self.request.session.pop('analyzed_ecg_id', None)
-            self.request.session.pop('cycles_details', None)
+                # Récupération des détails de pathologie
+                if ecg.has_pathology_details:
+                    context['pathology_type'] = ecg.pathology_type
+                    context['pathology_confidence'] = ecg.pathology_confidence
+                    context['pathology_interpretation'] = ecg.pathology_interpretation
+
+                # Nettoyer la session après utilisation
+                self.request.session.pop('analyzed_ecg_id', None)
+                self.request.session.pop('cycles_details', None)
+                
+            else:
+                context['ecg'] = None
+                messages.error(self.request, "Résultats de l'analyse non trouvés")
             
         except ECG.DoesNotExist:
             context['ecg'] = None

@@ -50,18 +50,8 @@ class DoctorECGHistoryView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        return ECG.objects.filter(patient__doctor=self.request.user.doctor).order_by(
-            Case(
-                When(risk_level='HIGH', then=Value(0)),
-                When(risk_level='MEDIUM', then=Value(1)),
-                default=Value(2),
-                output_field=IntegerField()
-            ), 
-            '-diagnosis_date'
-        )
-
-    def get_queryset(self):
-        return ECG.objects.order_by(
+        # Filtrer les ECG pour n'inclure que ceux des patients du médecin connecté
+        return ECG.objects.filter(patient__doctor=self.request.user.doctor).select_related('patient').order_by(
             Case(
                 When(risk_level='HIGH', then=Value(0)),
                 When(risk_level='MEDIUM', then=Value(1)),

@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load custom_filters %}
+
 {% block content %}
 <div class="container mx-auto mt-8">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -30,6 +32,7 @@
                     <th class="px-6 py-3 text-left">Date</th>
                     <th class="px-6 py-3 text-left">Niveau de Risque</th>
                     <th class="px-6 py-3 text-left">Score de Confiance</th>
+                    <th class="px-6 py-3 text-left">Patient</th>
                     <th class="px-6 py-3 text-left">Actions</th>
                 </tr>
             </thead>
@@ -45,7 +48,21 @@
                             {{ ecg.get_risk_level_display }}
                         </span>
                     </td>
-                    <td class="px-6 py-4">{{ ecg.confidence_score|floatformat:1 }}%</td>
+                    <td class="px-6 py-4">{{ ecg.confidence_score|multiply:100|floatformat:1 }}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex flex-col">
+                            <span class="font-medium">{{ ecg.patient.first_name }} {{ ecg.patient.last_name }}</span>
+                            <span class="text-gray-500 text-sm">
+                                Genre : {{ ecg.patient.gender|upper }}
+                            </span>
+                            <span class="text-gray-500 text-sm">
+                                Âge : {{ ecg.patient.birth_date|calculate_age }} ans
+                            </span>
+                            <span class="text-gray-500 text-xs">
+                                N° Sécu : {{ ecg.patient.social_security_number }}
+                            </span>
+                        </div>
+                    </td>
                     <td class="px-6 py-4">
                         <a href="{% url 'patient_app:ecg_detail' ecg.diagnosis_id %}"
                             class="text-blue-500 hover:text-blue-700">

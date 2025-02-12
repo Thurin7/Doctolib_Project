@@ -37,6 +37,10 @@ class ECG(models.Model):
     diagnosis_date = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    has_pathology_details = models.BooleanField(default=False)
+    pathology_type = models.CharField(max_length=50, null=True, blank=True)
+    pathology_confidence = models.FloatField(null=True, blank=True)
+    pathology_interpretation = models.TextField(null=True, blank=True)
 
     def __str__(self):
         patient_name = f"{self.patient.last_name}" if self.patient else "Inconnu"
