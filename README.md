@@ -90,7 +90,6 @@
 - **Lucien LACHARMOISE**
 - **Clément ASENSIO**
 - **Emma COCO**
-- **Cheryle ADEBADA**
 
 ---
 
@@ -102,3 +101,13 @@
 - Pour toute question ou problème, n'hésitez pas à **ouvrir une issue** sur le dépôt GitHub du projet.
 
 **Bonne utilisation ! 🎉**
+
+**Études menées lors de l'analyse des données MIT-BIH et de l'entrainement des réseaux de neurones"**
+
+[Projet Doctolib - Rapport.docx](https://github.com/user-attachments/files/18769086/Projet.Doctolib.-.Rapport.docx)
+
+[Rapport Doctolib_Réseaux de neurones.pdf](https://github.com/user-attachments/files/18769091/Rapport.Doctolib_Reseaux.de.neurones.pdf)
+
+
+
+
