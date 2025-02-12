@@ -1,6 +1,6 @@
 # Doctolib Project
 
-## 📋 Table des matières
+## Table des matières
 - [Installation](#installation)
 - [Structure du projet](#structure-du-projet)
 - [Base de données](#base-de-données)
@@ -9,7 +9,7 @@
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### Prérequis
 - **Python 3.9+**
@@ -48,7 +48,7 @@
    ```bash
    python manage.py createsuperuser
    ```
-   📌 **Note :** Pour le rôle, utilisez `'ADMIN'` (en majuscules).
+   **Note :** Pour le rôle, utilisez `'ADMIN'` (en majuscules).
 
 7. **Créer le dossier pour les sessions**
    ```bash
@@ -63,7 +63,7 @@
 
 ---
 
-## 🏗️ Structure du projet
+## Structure du projet
 
 - **`account_app/`** : Gestion des utilisateurs (User, Patient, Doctor)
 - **`patient_app/`** : Gestion des ECG
@@ -71,7 +71,7 @@
 
 ---
 
-## 💾 Base de données
+## Base de données
 
 ### Models principaux :
 - **User** : Modèle d'authentification personnalisé
@@ -86,23 +86,22 @@
 
 ---
 
-## 👥 Contributeurs
+## Contributeurs
 - **Lucien LACHARMOISE**
 - **Clément ASENSIO**
 - **Emma COCO**
 
 ---
 
-## 📝 Notes de développement
+## Notes de développement
 - **Utiliser Python 3.9+**
 - **Django 4.2+**
 - Les **sessions** sont stockées dans des fichiers plutôt que dans la base de données.
 - Consultez `requirements.txt` pour la liste complète des dépendances et leurs versions.
 - Pour toute question ou problème, n'hésitez pas à **ouvrir une issue** sur le dépôt GitHub du projet.
 
-**Bonne utilisation ! 🎉**
 
-**Études menées lors de l'analyse des données MIT-BIH et de l'entrainement des réseaux de neurones"**
+## Études menées lors de l'analyse des données MIT-BIH et de l'entrainement des réseaux de neurones"
 
 [Projet Doctolib - Rapport.docx](https://github.com/user-attachments/files/18769086/Projet.Doctolib.-.Rapport.docx)
 
@@ -110,4 +109,5 @@
 
 
 
+**Bonne utilisation ! 🎉**
 
