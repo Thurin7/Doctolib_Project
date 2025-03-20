@@ -91,6 +91,7 @@
 - **Lucien LACHARMOISE**
 - **Clément ASENSIO**
 - **Emma COCO**
+- **Thurin Kenfack**
 
 ---
 
